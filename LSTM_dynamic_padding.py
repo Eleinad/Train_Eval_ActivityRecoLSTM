@@ -109,17 +109,17 @@ for video in dataset_boo_video:
 	n_frame = video['final_nframes']
 	n_batch = video['reduced_fps']
 
-	iteration = n_frame//(n_batch//2)
+	iteration = int(n_frame//(n_batch//2))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
 
 
 	for i in range(iteration):
 		if n_batch+((n_batch//2)*i) <= n_frame:
-			end = n_batch+((n_batch//2)*i)
+			end = int(n_batch+((n_batch//2)*i))
 		else:
 			end = n_frame
 
-		frame_batch = video['sequence'][(n_batch//2)*i:end,:]
+		frame_batch = video['sequence'][int(n_batch//2)*i:end,:]
 		frame_batch = np.where(frame_batch>0,1,0)
 		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
 
