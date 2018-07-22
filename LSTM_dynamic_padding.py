@@ -169,8 +169,8 @@ print(len(X_test))
 lstm_in_cell_units=5 # design choice (hyperparameter)
 
 # training params
-n_epoch = 1
-train_batch_size=16
+n_epoch = 10
+train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
 learning_rate=0.01
@@ -258,8 +258,8 @@ init = tf.global_variables_initializer()
 losses = {
 		  'train_loss':[],
 		  'train_acc':[],
-		  'val_loss':[],
-		  'val_acc':[]
+		  'test_loss':[],
+		  'test_acc':[]
 		  }
 
 
