@@ -3,21 +3,22 @@ import numpy as np
 import pickle
 from pprint import pprint
 from sklearn.model_selection import train_test_split
-
+import os
+import time
+import datetime
 
 
 
 #-----------------------------------------------------------------
 #--------------------------FAKE DATASET---------------------------
 #-----------------------------------------------------------------
-
+'''
 # ========fake parameters=======
 max_class_id = 5 # y_true = activity
-max_n_frame = 400 # max_n_frames
+max_n_frame = 7 # max_n_frames
 max_freq = 3 # obj_freq_in_frame
-n_feature = 33 # bag-of-objects
+n_feature = 5 # bag-of-objects
 n_video = 22
-
 
 # ============creation==========
 
@@ -25,123 +26,137 @@ dataset_detection_video = []
 
 for i in range(n_video):
     current_class_id = np.random.randint(0,max_class_id)
-    current_n_frame = np.random.randint(1,max_n_frame+1)
-    current_n_frame = 400
+    current_n_frame = np.random.randint(10,10+max_n_frame)
+    #current_n_frame = 400
     
     current_objs_in_frame = []
     for j in range(current_n_frame):
         current_n_objs_in_frame = np.random.randint(1,5)
         current_frame = np.random.choice(n_feature, current_n_objs_in_frame, replace=True)
         current_frame += 1
-        current_objs_in_frame.append(current_frame)
+        current_objs_in_frame.append({'obj_class_ids': current_frame,
+        							  'obj_rois':0})
 
     dataset_detection_video.append({'frames_info':current_objs_in_frame,
-                                    'class_id':current_class_id})
+                                    'class_id':current_class_id,
+                                    'reduced_fps':4,
+                                    'final_nframes':len(current_objs_in_frame)})
 
 
 pickle.dump(dataset_detection_video, open('dataset_detection_video.pickle', 'wb'))
 
-
 dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb'))
+'''
+
+max_class_id = 8 # y_true = activity
+n_feature = 33 # bag-of-objects
+
+pickle_path = './PersonalCare/pickle'
+dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path)]
+    
+classlbl_to_classid = {} 
+classid = 0
+
+for i in dataset_detection_video:
+    classlbl = i['class_id'].lower().replace(' ','')
+    if classlbl not in classlbl_to_classid:
+        classlbl_to_classid[classlbl] = classid
+        classid += 1
+
+    i['class_id'] = classlbl_to_classid[classlbl]
+
+
+# videos must be at least 5 s long
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
 
 
 
 
-#==================FEATURE FREQ OBJS===============
+#==================FEATURE BAG-OF-OBJS===============
 
-#creo una lista di numeri corrispondente all'indice degli oggetti
-listaDiNumeri = []
-i=0
-while i<n_feature :
-    listaDiNumeri.append(i+1)
-    i=i+1 
-
-
-dataset_feature_video = []
+dataset_boo_video = []
 
 for video in dataset_detection_video:
-    numeroFrame = len(video['frames_info'])
-
-    #inizializzo la matrice che ha per righe i frame e per colonne gli oggetti; l'intersezione conterrà quali e quanti oggetti sono stati riconosciuti nel frame
-    videoAnalysis = np.zeros((numeroFrame,n_feature))
-    #pprint(videoAnalysis)
-
-
-    #scorre dizionario
-    for index, detection in enumerate(video['frames_info']) :
-        #scorre la lista di numeri corrispondente agli oggetti    
-        for numObj in listaDiNumeri:
-            #scorre gli id delle classi (chiavi)
-            cont = 0
-            for obj_id in detection:
-                if numObj == obj_id:
-                    cont = cont +1
-            videoAnalysis[index][numObj-1] = cont
-
-        
-
     
-    dataset_feature_video.append({'class_id': video['class_id'],
-                                  'n_frame': numeroFrame,
-                                  'sequence': videoAnalysis})
+    video_boo_matrix = np.zeros((video['final_nframes'],n_feature), dtype=np.uint8)
+
+    for index, frame in enumerate(video['frames_info']) :
+    	boo = {}
+
+    	for obj in frame['obj_class_ids']:
+    		if obj not in boo:
+    			boo[obj] = 1
+    		else:
+    			boo[obj] += 1
+
+    	for class_id_index, obj_freq in boo.items():
+    		video_boo_matrix[index][class_id_index-1] = obj_freq
+
+      
+    dataset_boo_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': video_boo_matrix})
 
 
 
-#==================CO-OCC FREQ OBJS===============
+#==================CO-OCC FREQ OBJS================
 
-# list of lists of presence features
-video_list = [[frame.tolist() for frame in np.where(video['sequence']>0, 1, 0)] for video in dataset_feature_video]
+'''
+dataset_cooc_video = []
 
- #stride
- #batch
-co_occ_list = []
-temp = []
+for video in dataset_boo_video:
+	n_frame = video['final_nframes']
+	n_batch = video['reduced_fps']
 
-for index, frame_list in enumerate(dataset_feature_video):
-	n_frame = frame_list['n_frame']
-	win_len = frame_list['reduced_fps']	#batch
-	iteration = n_frame//(win_len//2) 	#stride
+	iteration = n_frame//(n_batch//2)
+	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
+
+
 	for i in range(iteration):
-		frame_batch = video_list[i][(win_len//2)*i:win_len+((win_len//2)*i)]
-		matr = np.row_stack(frame_batch)
-		co_occ = matr @ matr.T
-		temp.append(co_occ)
-	co_occ_list.append(list(temp))
+		if n_batch+((n_batch//2)*i) <= n_frame:
+			end = n_batch+((n_batch//2)*i)
+		else:
+			end = n_frame
+
+		frame_batch = video['sequence'][(n_batch//2)*i:end,:]
+		frame_batch = np.where(frame_batch>0,1,0)
+		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
+
+		cooc_flat_index = 0
+		for j in range(n_feature-1):
+			for k in range((j+1),n_feature):
+				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
+				cooc_flat_index+=1
+
+	video['sequence'] = cooc_flat_seq_matrix
+	dataset_cooc_video.append(video)
+
+'''
 
 
-b=np.triu(matrice)
-b[np.nonzero(b)]
+#============final transformation (sequence and one_hot)===========
 
-
-
-
-
-
-
-
-
-
-
-
-
-#============preparation===========
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_feature_video):
+for index,i in enumerate(dataset_boo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
 	y.append(one_hot)
-	seq_len.append(i['n_frame'])
+	seq_len.append(i['sequence'].shape[0])
+
 
 
 #==========splitting==============
 X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
-	 train_test_split(X,y,seq_len,test_size=0.3, random_state=0)#, stratify=y)
+	 train_test_split(X,y,seq_len,test_size=0.3, random_state=0, stratify=y)
 
 
 print(len(X_train))
+print(len(X_test))
+
 
 
 
@@ -154,8 +169,8 @@ print(len(X_train))
 lstm_in_cell_units=5 # design choice (hyperparameter)
 
 # training params
-n_epoch = 40
-train_batch_size=3
+n_epoch = 1
+train_batch_size=16
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
 learning_rate=0.01
@@ -183,7 +198,7 @@ test_data = tf.data.Dataset.from_generator(lambda: zipped_test_data, (tf.int32, 
 train_data = train_data.shuffle(buffer_size=len(X))
 
 # obtain a padded_batch (recall that we are working with sequences!)
-shape = ([None,n_feature],[max_class_id],[])
+shape = ([None,len(X[0][0])],[max_class_id],[])
 train_data_batch = train_data.padded_batch(train_batch_size, padded_shapes=shape)
 # fake batches, they're the entire train and test dataset -> just needed to pad them!
 # they will be used in the validation phase (not for training)
@@ -240,6 +255,13 @@ init = tf.global_variables_initializer()
 
 
 
+losses = {
+		  'train_loss':[],
+		  'train_acc':[],
+		  'val_loss':[],
+		  'val_acc':[]
+		  }
+
 
 #==========================session==========================
 
@@ -247,13 +269,17 @@ with tf.Session() as sess:
 	sess.run(init)
 	
 	#***************** TRAINING ************************
+
 	for i in range(n_epoch):
+		start_epoch_time = time.time()
 		print('\nEpoch: %d/%d' % ((i+1), n_epoch))
 		sess.run(train_iterator_init)
 		
 		for j in range(n_iteration):
-			_, batch_loss = sess.run((optimizer, loss), feed_dict={lstmstate_batch_size:train_batch_size})					
-			print('Batch: %d/%d - Loss: %f' % ((j+1), n_iteration, batch_loss))
+			start_batch_time = time.time()
+			_, batch_loss = sess.run((optimizer, loss), feed_dict={lstmstate_batch_size:train_batch_size})
+			batch_time = str(datetime.timedelta(seconds=round(time.time()-start_batch_time, 2)))
+			print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
 
 		
 			# results = sess.run((current_X_batch, 
@@ -263,17 +289,26 @@ with tf.Session() as sess:
 
 
 		#****************** VALIDATION ******************
+		epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
+		print('Tot epoch time: %s' % (epoch_time))
 		# end of every epoch
 		sess.run(faketrain_iterator_init)
 		train_loss, train_acc = sess.run((loss, accuracy),feed_dict={lstmstate_batch_size:train_fakebatch_size})
 		print('\nTrain_loss: %f' % train_loss)
 		print('Train_acc: %f' % train_acc)
 
+
 		sess.run(faketest_iterator_init)
 		test_loss, test_acc = sess.run((loss, accuracy),feed_dict={lstmstate_batch_size:test_fakebatch_size})
 		print('Test_loss: %f' % test_loss)
 		print('Test_acc: %f' % test_acc)
 
+		losses['train_loss'].append(train_loss)
+		losses['train_acc'].append(train_acc)
+		losses['test_loss'].append(test_loss)
+		losses['test_acc'].append(test_acc)
+
+	pickle.dump(losses, open('losses.pickle','wb'))
 
 
 
