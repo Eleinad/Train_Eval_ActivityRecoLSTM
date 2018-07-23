@@ -112,7 +112,7 @@ for video in dataset_detection_video:
 
 #==================CO-OCC FREQ OBJS================
 
-'''
+
 dataset_cooc_video = []
 
 for video in dataset_boo_video:
@@ -142,7 +142,6 @@ for video in dataset_boo_video:
 	video['sequence'] = np.where(cooc_flat_seq_matrix>0,1,0)
 	dataset_cooc_video.append(video)
 
-'''
 
 
 
