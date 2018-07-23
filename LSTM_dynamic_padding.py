@@ -158,7 +158,6 @@ for index,video in enumerate(dataset_boo_video):
 	n_batch = 4*video['reduced_fps']
 
 	iteration = int(n_frame//(n_batch//1))
-	print(index, iteration)
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
 
 
@@ -183,7 +182,6 @@ for index,video in enumerate(dataset_boo_video):
 
 
 for index,i in enumerate(dataset_cooc_due_video):
-	print(index)
 	b = np.vstack((i['sequence'][0], i['sequence'][0]))
 	for r in range(1,i['sequence'].shape[0]):
 		b = np.vstack((b,np.vstack((i['sequence'][r],i['sequence'][r]))))
@@ -220,7 +218,7 @@ print(len(X_test))
 
 
 
-'''
+
 #-----------------------------------------------------------------------------
 #------------------------------------NETWORK----------------------------------
 #-----------------------------------------------------------------------------
@@ -371,7 +369,7 @@ with tf.Session() as sess:
 	pickle.dump(losses, open('losses.pickle','wb'))
 
 
-'''
+
 
 
 #TODO
