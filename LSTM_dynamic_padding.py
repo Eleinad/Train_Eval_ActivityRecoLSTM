@@ -139,7 +139,7 @@ for video in dataset_boo_video:
 				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
 				cooc_flat_index+=1
 
-	video['sequence'] = np.power(cooc_flat_seq_matrix, 0.5)
+	video['sequence'] = np.where(cooc_flat_seq_matrix>0,1,0)
 	dataset_cooc_video.append(video)
 
 
