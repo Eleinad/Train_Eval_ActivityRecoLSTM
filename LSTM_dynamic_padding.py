@@ -117,9 +117,9 @@ dataset_cooc_uno_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = 2*video['reduced_fps']
+	n_batch = 5*video['reduced_fps']
 
-	iteration = int(n_frame//(n_batch//1))
+	iteration = int(n_frame//(n_batch//2))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
 
 
@@ -139,7 +139,7 @@ for video in dataset_boo_video:
 				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
 				cooc_flat_index+=1
 
-	video['sequence'] = cooc_flat_seq_matrix
+	video['sequence'] = np.power(cooc_flat_seq_matrix,2)
 	dataset_cooc_uno_video.append(video)
 
 
@@ -150,7 +150,7 @@ for video in dataset_boo_video:
 
 #==================CO-OCC FREQ OBJS variable size batch invideo================
 
-
+'''
 dataset_cooc_due_video = []
 
 for index,video in enumerate(dataset_boo_video):
@@ -191,7 +191,7 @@ for index,i in enumerate(dataset_cooc_due_video):
 for index,i in enumerate(dataset_cooc_uno_video):
 	i['sequence'] = np.hstack((i['sequence'],dataset_cooc_due_video[index]['sequence']))
 
-
+'''
 
 #============final transformation (sequence and one_hot)===========
 
