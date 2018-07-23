@@ -65,7 +65,8 @@ for i in dataset_detection_video:
 
     i['class_id'] = classlbl_to_classid[classlbl]
 
- classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
+
+classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
 
 print(classlbl_to_classid)
