@@ -169,7 +169,7 @@ print(len(X_test))
 lstm_in_cell_units=5 # design choice (hyperparameter)
 
 # training params
-n_epoch = 30
+n_epoch = 100
 train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
