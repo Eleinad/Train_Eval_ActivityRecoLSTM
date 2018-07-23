@@ -112,7 +112,7 @@ for video in dataset_detection_video:
 
 #==================CO-OCC FREQ OBJS================
 
-
+'''
 dataset_cooc_video = []
 
 for video in dataset_boo_video:
@@ -142,7 +142,7 @@ for video in dataset_boo_video:
 	video['sequence'] = np.where(cooc_flat_seq_matrix>0,1,0)
 	dataset_cooc_video.append(video)
 
-
+'''
 
 
 
@@ -198,7 +198,7 @@ for index,i in enumerate(dataset_cooc_uno_video):
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_cooc_video):
+for index,i in enumerate(dataset_boo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
