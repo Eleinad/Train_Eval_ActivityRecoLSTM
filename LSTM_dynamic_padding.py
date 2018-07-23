@@ -107,7 +107,7 @@ dataset_cooc_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = 15*video['reduced_fps']
+	n_batch = 4*video['reduced_fps']
 
 	iteration = int(n_frame//(n_batch//6))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
