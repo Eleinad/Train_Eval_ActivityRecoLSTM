@@ -49,7 +49,7 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 '''
 
 max_class_id = 7 # y_true = activity
-n_feature = 18 # bag-of-objects
+n_feature = 33 # bag-of-objects
 
 pickle_path = './PersonalCare/pickle'
 dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path)]
@@ -96,8 +96,7 @@ for video in dataset_detection_video:
     			boo[obj] += 1
 
     	for class_id_index, obj_freq in boo.items():
-    		if class_id_index in range(1,19):
-    			video_boo_matrix[index][class_id_index-1] = obj_freq
+    		video_boo_matrix[index][class_id_index-1] = obj_freq
 
       
     dataset_boo_video.append({'class_id': video['class_id'],
@@ -120,7 +119,7 @@ for video in dataset_boo_video:
 	n_frame = video['final_nframes']
 	n_batch = 5*video['reduced_fps']
 
-	iteration = int(n_frame//(n_batch//2))
+	iteration = int(n_frame//(n_batch//3))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
 
 
