@@ -48,7 +48,7 @@ pickle.dump(dataset_detection_video, open('dataset_detection_video.pickle', 'wb'
 dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb'))
 '''
 
-max_class_id = 8 # y_true = activity
+max_class_id = 7 # y_true = activity
 n_feature = 33 # bag-of-objects
 
 pickle_path = './PersonalCare/pickle'
@@ -66,9 +66,10 @@ for i in dataset_detection_video:
     i['class_id'] = classlbl_to_classid[classlbl]
 
 
-# videos must be at least 5 s long
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
+print(classlbl_to_classid)
 
+# videos must be at least 5 s long
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and i['class_id'] != 1]
 
 
 
@@ -166,7 +167,7 @@ print(len(X_test))
 #-----------------------------------------------------------------------------
 
 # NN params
-lstm_in_cell_units=100 # design choice (hyperparameter)
+lstm_in_cell_units=20 # design choice (hyperparameter)
 
 # training params
 n_epoch = 100
