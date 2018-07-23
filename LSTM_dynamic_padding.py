@@ -166,7 +166,7 @@ print(len(X_test))
 #-----------------------------------------------------------------------------
 
 # NN params
-lstm_in_cell_units=20 # design choice (hyperparameter)
+lstm_in_cell_units=100 # design choice (hyperparameter)
 
 # training params
 n_epoch = 100
