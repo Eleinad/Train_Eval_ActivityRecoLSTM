@@ -139,7 +139,7 @@ for video in dataset_boo_video:
 				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
 				cooc_flat_index+=1
 
-	video['sequence'] = cooc_flat_seq_matrix
+	video['sequence'] = cooc_flat_seq_matrix//2
 	dataset_cooc_video.append(video)
 
 
