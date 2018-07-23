@@ -236,7 +236,7 @@ current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
 lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(lstm_in_cell_units, state_is_tuple=True)
 #state_c, state_h = lstm_cell.zero_state(lstmstate_batch_size, tf.float32)
 #initial_state = tf.nn.rnn_cell.LSTMStateTuple(tf.Variable(state_c, trainable=False), tf.Variable(state_h, trainable=False))
-lstm_cells = tf.nn.rnn_cell.MultiRNNCell([lstm_cell]*n_layer)
+lstm_cells = tf.nn.rnn_cell.MultiRNNCell([lstm_cell]*n_layer, state_is_tuple=True)
 initial_state = lstm_cells.zero_state(lstmstate_batch_size, tf.float32)
 outputs, states = tf.nn.dynamic_rnn(lstm_cells, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
