@@ -69,6 +69,7 @@ for i in dataset_detection_video:
 classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
 
+print(classlbl_to_classid)
 
 # videos must be at least 5 s long
 dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
@@ -163,6 +164,7 @@ print(len(X_test))
 
 
 
+
 #-----------------------------------------------------------------------------
 #------------------------------------NETWORK----------------------------------
 #-----------------------------------------------------------------------------
@@ -172,7 +174,6 @@ lstm_in_cell_units=20 # design choice (hyperparameter)
 
 # training params
 n_epoch = 100
-n_layer = 2
 train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
@@ -235,9 +236,8 @@ current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
 lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(lstm_in_cell_units, state_is_tuple=True)
 #state_c, state_h = lstm_cell.zero_state(lstmstate_batch_size, tf.float32)
 #initial_state = tf.nn.rnn_cell.LSTMStateTuple(tf.Variable(state_c, trainable=False), tf.Variable(state_h, trainable=False))
-lstm_cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell]*n_layer, state_is_tuple=True)
 initial_state = lstm_cell.zero_state(lstmstate_batch_size, tf.float32)
-outputs, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state,  dtype=tf.float32)#sequence_length=current_seq_len_batch,
+outputs, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
 # last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
 last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
