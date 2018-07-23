@@ -76,6 +76,8 @@ dataset_detection_video = [i for i in dataset_detection_video if (i['final_nfram
 
 
 
+
+
 #==================FEATURE BAG-OF-OBJS===============
 
 dataset_boo_video = []
@@ -104,14 +106,18 @@ for video in dataset_detection_video:
 
 
 
+
+
+
+
 #==================CO-OCC FREQ OBJS================
 
 
-dataset_cooc_video = []
+dataset_cooc_uno_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = video['reduced_fps']
+	n_batch = 4*video['reduced_fps']
 
 	iteration = int(n_frame//(n_batch//2))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
@@ -134,8 +140,49 @@ for video in dataset_boo_video:
 				cooc_flat_index+=1
 
 	video['sequence'] = cooc_flat_seq_matrix
-	dataset_cooc_video.append(video)
+	dataset_cooc_uno_video.append(video)
 
+
+
+
+
+
+
+#==================CO-OCC FREQ OBJS variable size batch invideo================
+
+
+dataset_cooc_due_video = []
+
+for video in dataset_boo_video:
+	n_frame = video['final_nframes']
+	n_batch = 10*video['reduced_fps']
+
+	iteration = int(n_frame//(n_batch//6))
+	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
+
+
+	for i in range(iteration):
+		if n_batch+((n_batch//2)*i) <= n_frame:
+			end = int(n_batch+((n_batch//2)*i))
+		else:
+			end = n_frame
+
+		frame_batch = video['sequence'][int(n_batch//2)*i:end,:]
+		frame_batch = np.where(frame_batch>0,1,0)
+		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch)
+
+		cooc_flat_index = 0
+		for j in range(n_feature):
+			for k in range(j,n_feature):
+				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
+				cooc_flat_index+=1
+
+	video['sequence'] = cooc_flat_seq_matrix
+	dataset_cooc_due_video.append(video)
+
+
+for index,i in enumerate(dataset_cooc_uno_video):
+	i['sequence'] = np.hstack((i['sequence'],dataset_cooc_due_video[index]['sequence']))
 
 
 
@@ -144,7 +191,7 @@ for video in dataset_boo_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_boo_video):
+for index,i in enumerate(dataset_cooc_uno_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
