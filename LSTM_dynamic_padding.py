@@ -115,7 +115,7 @@ for video in dataset_boo_video:
 
 	for i in range(iteration):
 		if n_batch+((n_batch//2)*i) <= n_frame:
-			end = int(n_batch+((n_batch//1.5)*i))
+			end = int(n_batch+((n_batch//5)*i))
 		else:
 			end = n_frame
 
