@@ -69,7 +69,6 @@ for i in dataset_detection_video:
 classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
 
-print(classlbl_to_classid)
 
 # videos must be at least 5 s long
 dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
@@ -110,8 +109,8 @@ for video in dataset_detection_video:
 dataset_cooc_video = []
 
 for video in dataset_boo_video:
-	n_frame = 5*video['final_nframes']
-	n_batch = video['reduced_fps']
+	n_frame = video['final_nframes']
+	n_batch = 5*video['reduced_fps']
 
 	iteration = int(n_frame//(n_batch//2))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
