@@ -208,7 +208,7 @@ for index,i in enumerate(dataset_boo_video):
 
 #==========splitting==============
 X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
-	 train_test_split(X,y,seq_len,test_size=0.3, random_state=0, stratify=y)
+	 train_test_split(X,y,seq_len,test_size=0.2, random_state=0, stratify=y)
 
 
 print(len(X_train))
