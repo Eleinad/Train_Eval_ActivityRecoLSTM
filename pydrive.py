@@ -1,3 +1,4 @@
+'''
 import argparse
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
@@ -17,3 +18,12 @@ with open('my.txt','w') as f:
 
 file5.SetContentFile('my.txt')
 file5.Upload() 
+
+'''
+
+from google.colab import files
+
+with open('my.txt','w') as f:
+    f.write('ECCOOOO')
+
+files.download('my.txt')
