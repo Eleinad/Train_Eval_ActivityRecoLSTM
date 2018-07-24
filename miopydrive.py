@@ -11,7 +11,9 @@ parser.add_argument('--drive', required=True)
 args = parser.parse_args()
 
 
-file5 = args.drive.CreateFile()
+drive = pickle.load(open(args.drive,'r'))
+
+file5 = drive.CreateFile()
 
 with open('my.txt','w') as f:
     f.write('ECCOOOO')
