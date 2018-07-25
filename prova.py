@@ -2,7 +2,7 @@ import json
 import os
 import cv2
 
-
+'''
 annotations = json.load(open('./Personal_Care/activity_net.v1-3.min.json','r'))
 
 
@@ -40,7 +40,7 @@ for i in dataset_video_annotations.values():
 
 
 n_segm = sorted([len(i['annotations']) for i in dataset_video_annotations.values()])
-
+'''
 
 '''
 import pickle
@@ -66,3 +66,36 @@ plt.legend(loc='upper left')
 plt.xlabel('epoch')
 plt.show()
 '''
+
+import pickle
+from pprint import pprint
+from PIL import Image, ImageDraw
+import numpy as np
+
+def decode_mask(encoded_list):
+    
+    #DECODING    
+    decoded_mask = np.zeros(encoded_list[0], dtype=bool)
+    encoded_list.pop(0)
+    
+    for element in encoded_list:
+        for i in np.arange(element[3]):
+            decoded_mask[element[0]+i,element[1],element[2]]=True
+    
+    return decoded_mask
+
+
+a = pickle.load(open('p2n_FtzA1gk_trimmed_ema.pickle','rb'))
+masks = a['segments'][0]['frames_info'][50]['obj_masks']
+
+masks = decode_mask(masks)
+print(masks.shape)
+
+
+
+img = Image.fromarray(masks[:,:,0].astype(np.uint8)*255)
+#pdraw.point([find_centroid(immagine)], fill=(255,0,0))
+#pdraw.rectangle(find_max_coord(x_coord, y_coord, h), outline=(255,0,0))
+img.show()
+
+#pprint(a)

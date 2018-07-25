@@ -50,11 +50,11 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 
 
 
+
+
 #-----------------------------------------------------------------
 #--------------------------TRUE DATASET---------------------------
 #-----------------------------------------------------------------
-
-
 
 
 pickle_path = './PersonalCare/pickle'
@@ -79,6 +79,8 @@ print(classlbl_to_classid)
 
 # videos must be at least 5 s long
 dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
+
+
 
 
 
@@ -122,7 +124,6 @@ for video in dataset_detection_video:
 
 
 #==================CO-OCC FREQ OBJS================
-
 
 dataset_cooc_video = []
 
