@@ -51,14 +51,35 @@ for i in dataset_detection_video:
 
     i['class_id'] = classlbl_to_classid[classlbl]
 
+
+classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
+
+
+
+# videos must be at least 5 s long
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
+
     
-with open('dataset_pickle_stats.csv','a') as file:   
+with open('dataset_pickle_stats.csv','w') as file:   
     for i in dataset_detection_video:
         file.write(str(i['class_id'])+','+str(i['reduced_fps'])+','+str(i['final_nframes'])+'\n')
 
 
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
-
-with open('dataset_picklefiltered_stats.csv','a') as file:   
-    for i in dataset_detection_video:
-        file.write(str(i['class_id'])+','+str(i['reduced_fps'])+','+str(i['final_nframes'])+'\n')
+classid_to_alldetectedobjs = {}
+for video in dataset_detection_video:
+    for frame in video['frames_info']:
+        boo = {}
+        for obj in frame['obj_class_ids']:
+            if obj not in boo:
+                boo[obj] = 1
+            else:
+                boo[obj] += 1
+    if classid_to_classlbl[video['class_id']] not in classid_to_alldetectedobjs:
+        classid_to_alldetectedobjs[classid_to_classlbl[video['class_id']]] = boo
+    else:
+        for key,value in boo.items():
+            if key not in classid_to_alldetectedobjs[classid_to_classlbl[video['class_id']]]:
+                 classid_to_alldetectedobjs[classid_to_classlbl[video['class_id']]][key] = value
+            else:
+                classid_to_alldetectedobjs[classid_to_classlbl[video['class_id']]][key] = classid_to_alldetectedobjs[classid_to_classlbl[video['class_id']]][key] + value
+        

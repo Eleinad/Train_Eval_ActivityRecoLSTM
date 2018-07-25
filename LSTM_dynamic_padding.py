@@ -48,8 +48,14 @@ pickle.dump(dataset_detection_video, open('dataset_detection_video.pickle', 'wb'
 dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb'))
 '''
 
-max_class_id = 7 # y_true = activity
-n_feature = 33 # bag-of-objects
+
+
+#-----------------------------------------------------------------
+#--------------------------TRUE DATASET---------------------------
+#-----------------------------------------------------------------
+
+
+
 
 pickle_path = './PersonalCare/pickle'
 dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path)]
@@ -78,7 +84,11 @@ dataset_detection_video = [i for i in dataset_detection_video if (i['final_nfram
 
 
 
+
 #==================FEATURE BAG-OF-OBJS===============
+
+max_class_id = 7 # y_true = activity
+n_feature = 33 # bag-of-objects
 
 dataset_boo_video = []
 
@@ -103,6 +113,7 @@ for video in dataset_detection_video:
                               'final_nframes': video['final_nframes'],
                               'reduced_fps':video['reduced_fps'],
                               'sequence': video_boo_matrix})
+
 
 
 
@@ -147,53 +158,12 @@ for video in dataset_boo_video:
 
 
 
-#==================CO-OCC FREQ OBJS variable size batch invideo================
-
-'''
-dataset_cooc_due_video = []
-
-for index,video in enumerate(dataset_boo_video):
-	n_frame = video['final_nframes']
-	n_batch = 4*video['reduced_fps']
-
-	iteration = int(n_frame//(n_batch//1))
-	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
 
 
-	for i in range(iteration):
-		if n_batch+((n_batch//2)*i) <= n_frame:
-			end = int(n_batch+((n_batch//2)*i))
-		else:
-			end = n_frame
-
-		frame_batch = video['sequence'][int(n_batch//2)*i:end,:]
-		frame_batch = np.where(frame_batch>0,1,0)
-		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch)
-
-		cooc_flat_index = 0
-		for j in range(n_feature):
-			for k in range(j,n_feature):
-				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
-				cooc_flat_index+=1
-
-	video['sequence'] = cooc_flat_seq_matrix
-	dataset_cooc_due_video.append(video)
 
 
-for index,i in enumerate(dataset_cooc_due_video):
-	b = np.vstack((i['sequence'][0], i['sequence'][0]))
-	for r in range(1,i['sequence'].shape[0]):
-		b = np.vstack((b,np.vstack((i['sequence'][r],i['sequence'][r]))))
-	i['sequence'] = b
-
-
-for index,i in enumerate(dataset_cooc_uno_video):
-	i['sequence'] = np.hstack((i['sequence'],dataset_cooc_due_video[index]['sequence']))
-
-'''
 
 #============final transformation (sequence and one_hot)===========
-
 
 X,y,seq_len=[],[],[]
 
@@ -213,6 +183,9 @@ X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
 
 print(len(X_train))
 print(len(X_test))
+
+
+
 
 
 
