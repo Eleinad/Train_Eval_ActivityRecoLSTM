@@ -12,7 +12,7 @@ parser.add_argument('--drive', required=True)
 args = parser.parse_args()
 
 
-drive = pickle.load(open(args.drive,'r'))
+drive = pickle.load(open(args.drive,'rb'))
 
 file5 = drive.CreateFile()
 
