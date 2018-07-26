@@ -129,7 +129,7 @@ dataset_cooc_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = video['reduced_fps']
+	n_batch = 3*video['reduced_fps']
 
 	iteration = int(n_frame//(n_batch//2))
 	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
@@ -154,14 +154,20 @@ for video in dataset_boo_video:
 	dataset_cooc_video.append({'class_id': video['class_id'],
                               'final_nframes': video['final_nframes'],
                               'reduced_fps':video['reduced_fps'],
-                              'sequence': cooc_flat_seq_matrix})#np.where(cooc_flat_seq_matrix>0,1,0)
+                              'sequence': np.where(cooc_flat_seq_matrix>0,1,0)})#np.where(cooc_flat_seq_matrix>0,1,0)
 
 
 
-results = []
+from sklearn.metrics.pairwise import cosine_similarity
+results,mean,percent = [],[],[]
 for video in dataset_cooc_video:
-	results.append([np.linalg.norm(video['sequence'][i+1]-video['sequence'][i]) for i in range(video['sequence'].shape[0]-1)])
-
+	results.append([cosine_similarity(video['sequence'][i+1].reshape(1,-1),video['sequence'][i].reshape(1,-1))[0][0] for i in range(video['sequence'].shape[0]-1)])
+	mean.append(sum(results[-1])/len(results[-1]))
+	nonzero = 0.0
+	for i in video['sequence']:
+		if np.count_nonzero(i) == 0:
+			nonzero += 1.0
+	percent.append(nonzero/video['sequence'].shape[0]*100)
 
 
 
@@ -196,7 +202,7 @@ print(len(X_test))
 
 
 
-
+'''
 #-----------------------------------------------------------------------------
 #------------------------------------NETWORK----------------------------------
 #-----------------------------------------------------------------------------
@@ -371,3 +377,4 @@ with tf.Session() as sess:
 # add the evaluation mode
 # 
 # tune the hyperparameters?
+'''
