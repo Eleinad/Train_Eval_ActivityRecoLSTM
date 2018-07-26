@@ -129,10 +129,10 @@ dataset_cooc_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = 5*video['reduced_fps']
+	n_batch = video['reduced_fps']
 
-	iteration = int(n_frame//(n_batch//3))
-	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
+	iteration = int(n_frame//(n_batch//2))
+	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
 
 
 	for i in range(iteration):
@@ -143,19 +143,24 @@ for video in dataset_boo_video:
 
 		frame_batch = video['sequence'][int(n_batch//2)*i:end,:]
 		frame_batch = np.where(frame_batch>0,1,0)
-		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch)
+		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
 
 		cooc_flat_index = 0
-		for j in range(n_feature):
-			for k in range(j,n_feature):
+		for j in range(n_feature-1):
+			for k in range((j+1),n_feature):
 				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
 				cooc_flat_index+=1
 
-	video['sequence'] = np.where(cooc_flat_seq_matrix>0,1,0)
-	dataset_cooc_video.append(video)
+	dataset_cooc_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': np.where(cooc_flat_seq_matrix>0,1,0)})#np.where(cooc_flat_seq_matrix>0,1,0)
 
 
 
+results = []
+for video in dataset_cooc_video:
+	results.append([np.linalg.norm(video['sequence'][i+1]-video['sequence'][i]) for i in range(video['sequence'].shape[0]-1)])
 
 
 
@@ -168,7 +173,7 @@ for video in dataset_boo_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_boo_video):
+for index,i in enumerate(dataset_cooc_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -179,7 +184,7 @@ for index,i in enumerate(dataset_boo_video):
 
 #==========splitting==============
 X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
-	 train_test_split(X,y,seq_len,test_size=0.2, random_state=0, stratify=y)
+	 train_test_split(X,y,seq_len,test_size=0.2, random_state=0)#, stratify=y)
 
 
 print(len(X_train))
