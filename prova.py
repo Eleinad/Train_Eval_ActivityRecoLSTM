@@ -42,12 +42,12 @@ for i in dataset_video_annotations.values():
 n_segm = sorted([len(i['annotations']) for i in dataset_video_annotations.values()])
 '''
 
-'''
+
 import pickle
 import matplotlib.pyplot as plt
 
 
-losses = pickle.load(open('losses_.pickle','rb'))
+losses = pickle.load(open('losses.pickle','rb'))
 #losses_cooc = pickle.load(open('losses_cooc.pickle','rb'))
 
 plt.subplot(2,1,1)
@@ -65,8 +65,8 @@ plt.plot(losses['test_acc'], label='test_boo_acc')
 plt.legend(loc='upper left')
 plt.xlabel('epoch')
 plt.show()
-'''
 
+'''
 import pickle
 from pprint import pprint
 from PIL import Image, ImageDraw
@@ -98,4 +98,4 @@ img = Image.fromarray(masks[:,:,0].astype(np.uint8)*255)
 #pdraw.rectangle(find_max_coord(x_coord, y_coord, h), outline=(255,0,0))
 img.show()
 
-#pprint(a)
+#pprint(a)'''
