@@ -131,7 +131,7 @@ dataset_batchedboo_video = []
 
 for video in dataset_boo_video:
 	n_frame = video['final_nframes']
-	n_batch = 3
+	n_batch = 6
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
