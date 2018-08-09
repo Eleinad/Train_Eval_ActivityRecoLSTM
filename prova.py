@@ -47,7 +47,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-losses = pickle.load(open('losses_.pickle','rb'))
+losses = pickle.load(open('losses__.pickle','rb'))
 #losses_cooc = pickle.load(open('losses_cooc.pickle','rb'))
 
 plt.subplot(2,1,1)

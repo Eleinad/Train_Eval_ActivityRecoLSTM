@@ -56,6 +56,12 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 #--------------------------TRUE DATASET---------------------------
 #-----------------------------------------------------------------
 
+#============true parameters==========
+
+max_class_id = 7 # y_true = activity
+n_feature = 33 # bag-of-objects
+
+#=============loading data==============
 
 pickle_path = './PersonalCare/pickle'
 dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path)]
@@ -77,7 +83,7 @@ classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
 print(classlbl_to_classid)
 
-# videos must be at least 5 s long
+# filtering data -> videos must be at least 5 s long and no washingface
 dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
 
 
@@ -86,11 +92,7 @@ dataset_detection_video = [i for i in dataset_detection_video if (i['final_nfram
 
 
 
-
-#==================FEATURE BAG-OF-OBJS===============
-
-max_class_id = 7 # y_true = activity
-n_feature = 33 # bag-of-objects
+#==================BAG-OF-OBJS===============
 
 dataset_boo_video = []
 
@@ -121,8 +123,33 @@ for video in dataset_detection_video:
 
 
 
+#==============BATCHED BAG-OF-OBJS============
+
+dataset_batchedboo_video = []
 
 
+
+for video in dataset_boo_video:
+	n_frame = video['final_nframes']
+	n_batch = 3
+
+	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
+
+	iteration = int(n_frame/n_batch)
+
+	for i in range(iteration):
+		frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
+		video_batchedboo_matrix[i] = np.mean(frame_batch, axis=0)
+
+	dataset_batchedboo_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': video_batchedboo_matrix})	
+
+
+
+
+'''
 #==================CO-OCC FREQ OBJS================
 
 dataset_cooc_video = []
@@ -174,12 +201,12 @@ for video in dataset_cooc_video:
 
 
 
-
+'''
 #============final transformation (sequence and one_hot)===========
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_cooc_video):
+for index,i in enumerate(dataset_batchedboo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -215,7 +242,7 @@ n_epoch = 100
 train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
-learning_rate=0.0001
+learning_rate=0.0005
 # ********************************************************
 #!!!!IMPORTANTEEEEE!!!
 # handling last batch remainder
