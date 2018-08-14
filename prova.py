@@ -47,24 +47,33 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-losses = pickle.load(open('losses__.pickle','rb'))
-#losses_cooc = pickle.load(open('losses_cooc.pickle','rb'))
+losses = pickle.load(open('losses_nobatch.pickle','rb'))
+losses_3 = pickle.load(open('losses_batched3.pickle','rb'))
+losses_6 = pickle.load(open('losses_batched6.pickle','rb'))
 
 plt.subplot(2,1,1)
-plt.plot(losses['train_loss'], label='train_boo_loss')
-plt.plot(losses['test_loss'], label='test_boo_loss')
-#plt.plot(losses_cooc['train_loss'], '--', color='blue', label='train_cooc_loss')
-#plt.plot(losses_cooc['test_loss'], '--', color='orange',label='test_cooc_loss')
+plt.plot(losses['train_loss'], label='no')
+plt.plot(losses['test_loss'], label='no')
+plt.plot(losses_3['train_loss'], '--', color='blue', label='3')
+plt.plot(losses_3['test_loss'], '--', color='orange',label='3')
+plt.plot(losses_6['train_loss'], 'o', color='blue', label='6')
+plt.plot(losses_6['test_loss'], 'o', color='orange',label='6')
+
 plt.legend(loc='upper left')
 
 plt.subplot(2,1,2)
-plt.plot(losses['train_acc'], label='train_boo_acc')
-plt.plot(losses['test_acc'], label='test_boo_acc')
-#plt.plot(losses_cooc['train_acc'], '--', color='blue',label='train_cooc_acc')
-#plt.plot(losses_cooc['test_acc'], '--', color='orange', label='test_cooc_acc')
+plt.plot(losses['train_acc'], label='no')
+plt.plot(losses['test_acc'], label='no')
+plt.plot(losses_3['train_acc'], '--', color='blue',label='3')
+plt.plot(losses_3['test_acc'], '--', color='orange', label='3')
+plt.plot(losses_6['train_acc'], 'o', color='blue',label='6')
+plt.plot(losses_6['test_acc'], 'o', color='orange',label='6')
+
 plt.legend(loc='upper left')
 plt.xlabel('epoch')
 plt.show()
+
+
 
 '''
 import pickle
@@ -99,3 +108,5 @@ img = Image.fromarray(masks[:,:,0].astype(np.uint8)*255)
 img.show()
 
 #pprint(a)'''
+
+
