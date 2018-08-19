@@ -167,6 +167,8 @@ def centroid_roi(roi):
 	return (roi[2]+roi[0])/2, (roi[3]+roi[1])/2
 
 
+minimum_speed = 0.0
+maximum_speed = 0.0
 
 
 dataset_batchedspeed_video, prova = [], []
@@ -302,7 +304,7 @@ for video in dataset_detection_video:
 
 
 	n_frame = video['final_nframes']
-	n_batch = 3
+	n_batch = 9
 
 	video_batchedspeed_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -329,6 +331,20 @@ for video in dataset_detection_video:
                               'final_nframes': video['final_nframes'],
                               'reduced_fps':video['reduced_fps'],
                               'sequence': video_batchedspeed_matrix})	
+
+	curr_min = video_batchedspeed_matrix.min()
+	curr_max = video_batchedspeed_matrix.max()
+
+	if curr_min <= minimum_speed:
+		minimum_speed = curr_min
+	if curr_max >= maximum_speed:
+		maximum_speed = curr_max
+
+	print(minimum_speed)
+	print(maximum_speed)
+
+	for video in dataset_batchedspeed_video:
+		video['sequence'] = (video['sequence']-minimum_speed) / (maximum_speed-minimum_speed) 
 
 
 
@@ -396,6 +412,8 @@ for index,i in enumerate(dataset_batchedspeed_video):
 	one_hot[i['class_id']-1] = 1
 	y.append(one_hot)
 	seq_len.append(i['sequence'].shape[0])
+
+
 
 
 
