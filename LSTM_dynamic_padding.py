@@ -121,7 +121,7 @@ for video in dataset_detection_video:
 '''
 
 
-'''
+
 
 #==============BATCHED BAG-OF-OBJS============
 
@@ -131,7 +131,7 @@ dataset_batchedboo_video = []
 for video in dataset_boo_video:
 
 	n_frame = video['final_nframes']
-	n_batch = 15
+	n_batch = 9
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -147,10 +147,10 @@ for video in dataset_boo_video:
                               'sequence': video_batchedboo_matrix})	
 
 
+
+
+
 '''
-
-
-
 
 
 #================SPEED=========================
@@ -322,7 +322,7 @@ maximum_speed = 100.0
 for video in dataset_batchedspeed_video:
 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
 	#video['sequence'] = video['sequence']/maximum_speed
-
+'''
 
 
 
@@ -381,7 +381,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedspeed_video):
+for index,i in enumerate(dataset_batchedboo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
