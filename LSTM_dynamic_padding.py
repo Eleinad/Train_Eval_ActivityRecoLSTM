@@ -167,13 +167,10 @@ def centroid_roi(roi):
 	return (roi[2]+roi[0])/2, (roi[3]+roi[1])/2
 
 
-minimum_speed = 0.0
-maximum_speed = 0.0
-
 
 dataset_batchedspeed_video, prova = [], []
 
-for video in dataset_detection_video:
+for video in [dataset_detection_video[0]]:
 
 
 	
@@ -265,31 +262,10 @@ for video in dataset_detection_video:
 
 
 
-	# costruzione di objid_to_listavgspeedincontiguous
-	# calcolo della avg speed per ogni continguo sfruttando objid_to_contiguous_intervals
-	objid_to_listavgspeedincontiguous = {}
-
-	for i in objid_to_contiguous_intervals.keys():
-		if len(objid_to_contiguous_intervals[i])>0:
-			objid_to_listavgspeedincontiguous[i] = []
-			curr_obj_contiguous_list = objid_to_contiguous_intervals[i]
-			for j in curr_obj_contiguous_list:
-				coord_list = []
-				start_frame = j[0]
-				end_frame = j[1]
-				frame_length = j[2]
-				start_coord = (centroids_list[j[0]][i-1][0], 0) #se ce n'è più di uno seleziona il primo
-				coord_list.append(start_coord)
-				for k in range(start_frame+1,end_frame+1):
-					temp = []
-					for index,next_centroid in enumerate(centroids_list[k][i-1]): #se ce n'è più di uno seleziona quello più vicino
-						euc_dist = np.sqrt(np.power(next_centroid[0]-coord_list[-1][0][0], 2) + np.power(next_centroid[1]-coord_list[-1][0][1], 2))
-						#print(euc_dist)
-						temp.append((index, euc_dist))
-					temp.sort(key=lambda x: x[1])
-					coord_list.append((centroids_list[k][i-1][temp[0][0]], coord_list[-1][1]+temp[0][1]))
-					#print(coord_list)
-				objid_to_listavgspeedincontiguous[i].append(coord_list[-1][1]/frame_length)
+	# with open('speed_values.txt', 'a') as fi:
+	# 	for objid,listavgspeed in objid_to_listavgspeedincontiguous.items():
+	# 		for i in listavgspeed:
+	# 			fi.write(str(i)+'\n')
 
 
 
@@ -321,7 +297,7 @@ for video in dataset_detection_video:
 			for c_index, contiguous in enumerate(contiguous_list):
 				if inside(start_frame_batch, end_frame_batch, contiguous[0], contiguous[1]):
 					temp[objid] = objid_to_listavgspeedincontiguous[objid][c_index] # sostituisci sempre con l'ultimo
-					prova.append([i, objid, start_frame_batch, end_frame_batch, contiguous[0], contiguous[1], objid_to_listavgspeedincontiguous[objid][c_index]])
+					#prova.append([i, objid, start_frame_batch, end_frame_batch, contiguous[0], contiguous[1], objid_to_listavgspeedincontiguous[objid][c_index]])
 
 		for objid, speed in temp.items():
 			video_batchedspeed_matrix[i][objid-1] = speed
@@ -332,20 +308,25 @@ for video in dataset_detection_video:
                               'reduced_fps':video['reduced_fps'],
                               'sequence': video_batchedspeed_matrix})	
 
-	curr_min = video_batchedspeed_matrix.min()
-	curr_max = video_batchedspeed_matrix.max()
 
-	if curr_min <= minimum_speed:
-		minimum_speed = curr_min
-	if curr_max >= maximum_speed:
-		maximum_speed = curr_max
 
-	print(minimum_speed)
-	print(maximum_speed)
+	# curr_min = video_batchedspeed_matrix.min()
+	# curr_max = video_batchedspeed_matrix.max()
 
-	for video in dataset_batchedspeed_video:
-		video['sequence'] = (video['sequence']-minimum_speed) / (maximum_speed-minimum_speed) 
+	# if curr_min <= minimum_speed:
+	# 	minimum_speed = curr_min
+	# if curr_max >= maximum_speed:
+	# 	maximum_speed = curr_max
 
+	#print(minimum_speed)
+	#print(maximum_speed)
+
+minimum_speed = 0.0
+maximum_speed = 100.0
+
+for video in dataset_batchedspeed_video:
+	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
+	video['sequence'] = video['sequence']/maximum_speed
 
 
 
@@ -399,7 +380,6 @@ for video in dataset_cooc_video:
 
 
 '''
-
 
 
 #============final transformation (sequence and one_hot)===========
