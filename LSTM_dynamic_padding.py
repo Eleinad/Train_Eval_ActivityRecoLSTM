@@ -330,7 +330,7 @@ for video in dataset_batchedspeed_video:
 
 # speed normalizing and frequency weighting
 for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
-	video_s['sequence'] = video_s['sequence']/maximum_speed
+	#video_s['sequence'] = video_s['sequence']/maximum_speed
 	video_s['sequence'] = video_s['sequence']*video_b['sequence']
 
 
