@@ -314,7 +314,8 @@ for video in dataset_detection_video:
 	#print(minimum_speed)
 	#print(maximum_speed)
 
-
+minimum_speed = 0.0
+maximum_speed = 100.0
 
 for video in dataset_batchedspeed_video:
 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
@@ -325,8 +326,7 @@ for video in dataset_batchedspeed_video:
 #================BATCHED BOO & NORM-SPEED MULTIPL======================
 
 
-minimum_speed = 0.0
-maximum_speed = 100.0
+
 
 # speed normalizing and frequency weighting
 for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
