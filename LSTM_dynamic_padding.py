@@ -90,7 +90,7 @@ dataset_detection_video = [i for i in dataset_detection_video if (i['final_nfram
 
 
 
-'''
+
 
 #==================BAG-OF-OBJS===============
 
@@ -118,7 +118,7 @@ for video in dataset_detection_video:
                               'reduced_fps':video['reduced_fps'],
                               'sequence': video_boo_matrix})
 
-'''
+
 
 
 
