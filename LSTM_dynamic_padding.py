@@ -150,7 +150,7 @@ for video in dataset_boo_video:
 
 
 
-'''
+
 
 
 #================SPEED=========================
@@ -315,14 +315,23 @@ for video in dataset_detection_video:
 	#print(maximum_speed)
 
 
-# speed normalizing
-minimum_speed = 0.0
-maximum_speed = 100.0
 
 for video in dataset_batchedspeed_video:
 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
-	#video['sequence'] = video['sequence']/maximum_speed
-'''
+
+
+
+
+#================BATCHED BOO & NORM-SPEED MULTIPL======================
+
+
+minimum_speed = 0.0
+maximum_speed = 100.0
+
+# speed normalizing and frequency weighting
+for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
+	video_s['sequence'] = video_s['sequence']/maximum_speed
+	video_s['sequence'] = video_s['sequence']*video_b['sequence']
 
 
 
@@ -381,7 +390,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedboo_video):
+for index,i in enumerate(dataset_batchedspeed_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1

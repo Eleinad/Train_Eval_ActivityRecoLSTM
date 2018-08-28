@@ -42,7 +42,7 @@ for i in dataset_video_annotations.values():
 n_segm = sorted([len(i['annotations']) for i in dataset_video_annotations.values()])
 '''
 
-
+'''
 import pickle
 import matplotlib.pyplot as plt
 
@@ -79,6 +79,35 @@ plt.plot(losses_9['train_acc'], 'x', color='blue',label='6')
 plt.plot(losses_9['test_acc'], 'x', color='orange',label='6')
 plt.plot(losses_15['train_acc'], '+', color='blue',label='6')
 plt.plot(losses_15['test_acc'], '+', color='orange',label='6')
+
+plt.legend(loc='upper left')
+plt.xlabel('epoch')
+plt.show()
+'''
+import pickle
+import matplotlib.pyplot as plt
+
+
+losses_b9_speed= pickle.load(open('losses_b9_speed.pickle','rb'))
+losses_b9_batchedboo = pickle.load(open('losses_b9_batchedboo.pickle','rb'))
+
+
+
+plt.subplot(2,1,1)
+plt.plot(losses_b9_speed['train_loss'], label='speed')
+plt.plot(losses_b9_speed['test_loss'], label='speed')
+plt.plot(losses_b9_batchedboo['train_loss'], '--', color='blue', label='boo')
+plt.plot(losses_b9_batchedboo['test_loss'], '--', color='orange',label='boo')
+
+
+plt.legend(loc='upper left')
+
+plt.subplot(2,1,2)
+plt.plot(losses_b9_speed['train_acc'], label='speed')
+plt.plot(losses_b9_speed['test_acc'], label='speed')
+plt.plot(losses_b9_batchedboo['train_acc'], '--', color='blue',label='boo')
+plt.plot(losses_b9_batchedboo['test_acc'], '--', color='orange', label='boo')
+
 
 plt.legend(loc='upper left')
 plt.xlabel('epoch')
