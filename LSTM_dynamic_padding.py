@@ -129,6 +129,7 @@ dataset_batchedboo_video = []
 
 
 for video in dataset_boo_video:
+
 	n_frame = video['final_nframes']
 	n_batch = 15
 
@@ -172,8 +173,6 @@ dataset_batchedspeed_video, prova = [], []
 
 for video in dataset_detection_video:
 
-
-	
 	# costruzione della struttura dati contenente i centroidi degli oggetti nei frame
 	centroids_list = []
 	for frame in video['frames_info']:
@@ -262,12 +261,6 @@ for video in dataset_detection_video:
 
 
 
-	# with open('speed_values.txt', 'a') as fi:
-	# 	for objid,listavgspeed in objid_to_listavgspeedincontiguous.items():
-	# 		for i in listavgspeed:
-	# 			fi.write(str(i)+'\n')
-
-
 
 	# a questo punto abbiamo 2 strutture dati:
 	# 1. objid_to_contiguous_intervals (dict)
@@ -321,12 +314,14 @@ for video in dataset_detection_video:
 	#print(minimum_speed)
 	#print(maximum_speed)
 
+
+# speed normalizing
 minimum_speed = 0.0
 maximum_speed = 100.0
 
 for video in dataset_batchedspeed_video:
 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
-	video['sequence'] = video['sequence']/maximum_speed
+	#video['sequence'] = video['sequence']/maximum_speed
 
 
 
