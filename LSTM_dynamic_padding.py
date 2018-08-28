@@ -170,7 +170,7 @@ def centroid_roi(roi):
 
 dataset_batchedspeed_video, prova = [], []
 
-for video in [dataset_detection_video[0]]:
+for video in dataset_detection_video:
 
 
 	
