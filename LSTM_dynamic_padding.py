@@ -56,10 +56,6 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 #--------------------------TRUE DATASET---------------------------
 #-----------------------------------------------------------------
 
-#============true parameters==========
-
-max_class_id = 7 # y_true = activity
-n_feature = 33 # bag-of-objects
 
 #=============loading data==============
 
@@ -84,12 +80,53 @@ classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 print(classlbl_to_classid)
 
 # filtering data -> videos must be at least 5 s long and no washingface
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface'][:2]
 
 
 
 
 
+#============true parameters==========
+
+max_class_id = 7 # y_true = activity
+n_feature = 33 # bag-of-objects
+
+'''
+
+#==================BAG-OF-TF-IDFSUBSETOBJS===============
+
+dataset_boo_video = []
+
+mapping = {5:0,6:1,7:2,8:3,10:4,12:5,33:6}
+
+for video in dataset_detection_video:
+    
+    video_boo_matrix = np.zeros((video['final_nframes'],n_feature), dtype=np.uint8)
+
+    for index, frame in enumerate(video['frames_info']) :
+    	boo = {}
+
+    	for obj in frame['obj_class_ids']:
+    		if obj in list(mapping.keys()):
+	    		if obj not in boo:
+	    			boo[obj] = 1
+	    		else:
+	    			boo[obj] += 1
+
+    	for class_id_index, obj_freq in boo.items():
+    		video_boo_matrix[index][mapping[class_id_index]] = obj_freq
+
+    video_boo_matrix = video_boo_matrix[~np.all(video_boo_matrix == 0, axis=1)]
+
+    dataset_boo_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': video_boo_matrix})
+
+    # filtro i video che hanno una sequence length minore del batch length
+    dataset_boo_video = [i for i in dataset_boo_video if i['sequence'].shape[0]>=9]
+
+'''
 
 
 #==================BAG-OF-OBJS===============
@@ -130,7 +167,7 @@ dataset_batchedboo_video = []
 
 for video in dataset_boo_video:
 
-	n_frame = video['final_nframes']
+	n_frame = video['sequence'].shape[0]
 	n_batch = 9
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -148,6 +185,11 @@ for video in dataset_boo_video:
 
 
 
+# l = []
+# for video_b in dataset_batchedboo_video:
+
+# 	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
+# 	l.append([(n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
 
 
 
@@ -303,23 +345,21 @@ for video in dataset_detection_video:
 
 
 
-	# curr_min = video_batchedspeed_matrix.min()
-	# curr_max = video_batchedspeed_matrix.max()
-
-	# if curr_min <= minimum_speed:
-	# 	minimum_speed = curr_min
-	# if curr_max >= maximum_speed:
-	# 	maximum_speed = curr_max
-
-	#print(minimum_speed)
-	#print(maximum_speed)
-
 minimum_speed = 0.0
 maximum_speed = 100.0
 
 for video in dataset_batchedspeed_video:
 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
 
+
+# s = b = np.zeros((1,33))
+# l = []
+# for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
+# 	n_s = video_s['sequence'].shape[0]*video_s['sequence'].shape[1]
+# 	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
+# 	l.append([(n_s-np.count_nonzero(video_s['sequence']))*100/n_s, (n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
+# 	s=s+np.count_nonzero(video_s['sequence'], axis=0)
+# 	b=b+np.count_nonzero(video_b['sequence'], axis=0)
 
 
 
@@ -331,7 +371,7 @@ for video in dataset_batchedspeed_video:
 # speed normalizing and frequency weighting
 for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
 	#video_s['sequence'] = video_s['sequence']/maximum_speed
-	video_s['sequence'] = video_s['sequence']*video_b['sequence']
+	video_s['sequence'] = np.concatenate((video_s['sequence'],video_b['sequence']), axis=1)
 
 
 

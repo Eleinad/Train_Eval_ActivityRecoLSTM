@@ -90,7 +90,7 @@ import matplotlib.pyplot as plt
 
 losses_b9_speed= pickle.load(open('losses_b9_speed.pickle','rb'))
 losses_b9_batchedboo = pickle.load(open('losses_b9_batchedboo.pickle','rb'))
-
+losses_speedtboo = pickle.load(open('losses_speedtimesboo.pickle','rb'))
 
 
 plt.subplot(2,1,1)
@@ -98,6 +98,8 @@ plt.plot(losses_b9_speed['train_loss'], label='speed')
 plt.plot(losses_b9_speed['test_loss'], label='speed')
 plt.plot(losses_b9_batchedboo['train_loss'], '--', color='blue', label='boo')
 plt.plot(losses_b9_batchedboo['test_loss'], '--', color='orange',label='boo')
+plt.plot(losses_speedtboo['train_loss'], 'o', color='blue', label='stb')
+plt.plot(losses_speedtboo['test_loss'], 'o', color='orange',label='stb')
 
 
 plt.legend(loc='upper left')
@@ -107,6 +109,8 @@ plt.plot(losses_b9_speed['train_acc'], label='speed')
 plt.plot(losses_b9_speed['test_acc'], label='speed')
 plt.plot(losses_b9_batchedboo['train_acc'], '--', color='blue',label='boo')
 plt.plot(losses_b9_batchedboo['test_acc'], '--', color='orange', label='boo')
+plt.plot(losses_speedtboo['train_acc'], 'o', color='blue',label='stb')
+plt.plot(losses_speedtboo['test_acc'], 'o', color='orange',label='stb')
 
 
 plt.legend(loc='upper left')
