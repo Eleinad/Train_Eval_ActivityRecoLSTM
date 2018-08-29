@@ -80,7 +80,7 @@ classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 print(classlbl_to_classid)
 
 # filtering data -> videos must be at least 5 s long and no washingface
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface'][:2]
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
 
 
 
