@@ -165,9 +165,10 @@ for video in dataset_detection_video:
 dataset_batchedboo_video = []
 
 
+
 for video in dataset_boo_video:
 
-	n_frame = video['sequence'].shape[0]
+	n_frame = video['final_nframes']
 	n_batch = 9
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -195,7 +196,7 @@ for video in dataset_boo_video:
 
 
 
-#================SPEED=========================
+#================AVG-SPEED and AVG-VELOCITY=========================
 
 def inside(start, end, c_start, c_end):
 	frame_batch_range = set(range(start,end+1))
@@ -212,6 +213,7 @@ def centroid_roi(roi):
 
 
 dataset_batchedspeed_video, prova = [], []
+dataset_batchedvelocity_video = []
 
 for video in dataset_detection_video:
 
@@ -299,7 +301,7 @@ for video in dataset_detection_video:
 					temp.sort(key=lambda x: x[1])
 					coord_list.append((centroids_list[k][i-1][temp[0][0]], coord_list[-1][1]+temp[0][1]))
 					#print(coord_list)
-				objid_to_listavgspeedincontiguous[i].append(coord_list[-1][1]/frame_length)
+				objid_to_listavgspeedincontiguous[i].append((coord_list[0][0], coord_list[-1][0], coord_list[-1][1]/frame_length, frame_length))
 
 
 
@@ -319,8 +321,9 @@ for video in dataset_detection_video:
 
 	video_batchedspeed_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
-	iteration = int(n_frame/n_batch)
+	video_batchedvelocity_matrix = np.zeros((int(n_frame/n_batch),n_feature*2))
 
+	iteration = int(n_frame/n_batch)
 
 
 	for i in range(iteration):
@@ -331,17 +334,23 @@ for video in dataset_detection_video:
 		for objid, contiguous_list in objid_to_contiguous_intervals.items():
 			for c_index, contiguous in enumerate(contiguous_list):
 				if inside(start_frame_batch, end_frame_batch, contiguous[0], contiguous[1]):
-					temp[objid] = objid_to_listavgspeedincontiguous[objid][c_index] # sostituisci sempre con l'ultimo
+					temp[objid] = (np.subtract(objid_to_listavgspeedincontiguous[objid][c_index][1],objid_to_listavgspeedincontiguous[objid][c_index][0])/objid_to_listavgspeedincontiguous[objid][c_index][3], objid_to_listavgspeedincontiguous[objid][c_index][2]) # sostituisci sempre con l'ultimo
 					#prova.append([i, objid, start_frame_batch, end_frame_batch, contiguous[0], contiguous[1], objid_to_listavgspeedincontiguous[objid][c_index]])
 
-		for objid, speed in temp.items():
-			video_batchedspeed_matrix[i][objid-1] = speed
+		for objid, values in temp.items():
+			video_batchedspeed_matrix[i][objid-1] = values[1]
+			video_batchedvelocity_matrix[i][objid-1] = values[0][0]
+			video_batchedvelocity_matrix[i][objid] = values[0][1]
 
 	
 	dataset_batchedspeed_video.append({'class_id': video['class_id'],
                               'final_nframes': video['final_nframes'],
                               'reduced_fps':video['reduced_fps'],
-                              'sequence': video_batchedspeed_matrix})	
+                              'sequence': video_batchedspeed_matrix})
+	dataset_batchedvelocity_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': video_batchedvelocity_matrix})
 
 
 
@@ -368,10 +377,10 @@ for video in dataset_batchedspeed_video:
 
 
 
-# speed normalizing and frequency weighting
-for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
-	#video_s['sequence'] = video_s['sequence']/maximum_speed
-	video_s['sequence'] = np.concatenate((video_s['sequence'],video_b['sequence']), axis=1)
+# # speed normalizing and frequency weighting
+# for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
+# 	#video_s['sequence'] = video_s['sequence']/maximum_speed
+# 	video_s['sequence'] = np.concatenate((video_s['sequence'],video_b['sequence']), axis=1)
 
 
 
@@ -430,7 +439,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedspeed_video):
+for index,i in enumerate(dataset_batchedvelocity_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -448,7 +457,6 @@ X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
 
 print(len(X_train))
 print(len(X_test))
-
 
 
 
@@ -601,7 +609,6 @@ with tf.Session() as sess:
 		losses['test_acc'].append(test_acc)
 
 	pickle.dump(losses, open('losses.pickle','wb'))
-
 
 
 
