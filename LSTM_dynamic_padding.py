@@ -626,6 +626,9 @@ with tf.Session() as sess:
 	sess.run(faketest_iterator_init)
 	test_y_true, test_y_pred = sess.run((y_true, y_pred),feed_dict={lstmstate_batch_size:test_fakebatch_size})
 
+	print()
+	print(classid_to_classlbl)
+	print()
 	print(confusion_matrix(test_y_true, test_y_pred))
 
 	pickle.dump(losses, open('losses.pickle','wb'))
