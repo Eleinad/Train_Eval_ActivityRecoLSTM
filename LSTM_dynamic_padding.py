@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from pprint import pprint
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 import os
 import time
 import datetime
