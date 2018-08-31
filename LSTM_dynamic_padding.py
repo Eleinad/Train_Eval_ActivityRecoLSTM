@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 from pprint import pprint
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 import os
 import time
 import datetime
@@ -60,7 +61,7 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 #=============loading data==============
 
 pickle_path = './PersonalCare/pickle'
-dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path)]
+dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path) if 'face' not in pickle.load(open(pickle_path+'/'+video_pickle,'rb'))['class_id']]
     
 classlbl_to_classid = {} 
 classid = 0
@@ -77,10 +78,10 @@ for i in dataset_detection_video:
 classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
 
-print(classlbl_to_classid)
+print(classid_to_classlbl)
 
-# filtering data -> videos must be at least 5 s long and no washingface
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5 and classid_to_classlbl[i['class_id']] != 'washingface']
+# filtering data -> videos must be at least 5 s
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
 
 
 
@@ -177,7 +178,7 @@ for video in dataset_boo_video:
 
 	for i in range(iteration):
 		frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
-		video_batchedboo_matrix[i] = np.mean(frame_batch, axis=0)
+		video_batchedboo_matrix[i] = np.sum(frame_batch, axis=0)
 
 	dataset_batchedboo_video.append({'class_id': video['class_id'],
                               'final_nframes': video['final_nframes'],
@@ -195,7 +196,7 @@ for video in dataset_boo_video:
 
 
 
-
+'''
 #================AVG-SPEED and AVG-VELOCITY=========================
 
 def inside(start, end, c_start, c_end):
@@ -211,9 +212,7 @@ def centroid_roi(roi):
 	return (roi[2]+roi[0])/2, (roi[3]+roi[1])/2
 
 
-
-dataset_batchedspeed_video, prova = [], []
-dataset_batchedvelocity_video = []
+dataset_batchedvelocity_video, dataset_batchedspeed_video, prova = [], [], []
 
 for video in dataset_detection_video:
 
@@ -354,24 +353,35 @@ for video in dataset_detection_video:
 
 
 
-minimum_speed = 0.0
-maximum_speed = 100.0
+# minimum_speed = 0.0
+# maximum_speed = 100.0
 
-for video in dataset_batchedspeed_video:
-	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
-
-
-# s = b = np.zeros((1,33))
-# l = []
-# for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
-# 	n_s = video_s['sequence'].shape[0]*video_s['sequence'].shape[1]
-# 	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
-# 	l.append([(n_s-np.count_nonzero(video_s['sequence']))*100/n_s, (n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
-# 	s=s+np.count_nonzero(video_s['sequence'], axis=0)
-# 	b=b+np.count_nonzero(video_b['sequence'], axis=0)
+# for video in dataset_batchedspeed_video:
+# 	video['sequence'] = np.where(video['sequence']>maximum_speed,maximum_speed,video['sequence'])
 
 
+s = b = np.zeros((1,33))
+max_s =  np.zeros((33,))
+max_b = np.zeros((33,))
+l = []
+for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video):
+	n_s = video_s['sequence'].shape[0]*video_s['sequence'].shape[1]
+	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
+	l.append([(n_s-np.count_nonzero(video_s['sequence']))*100/n_s, (n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
+	s=s+np.count_nonzero(video_s['sequence'], axis=0)
+	b=b+np.count_nonzero(video_b['sequence'], axis=0)
 
+	for index,i in enumerate(np.max(video_s['sequence'], axis=0).astype(int)):
+		if i>=max_s[index]:
+			max_s[index] = i
+
+	for index,i in enumerate(np.max(video_b['sequence'], axis=0).astype(int)):
+		if i>=max_b[index]:
+			max_b[index] = i
+
+'''
+
+'''
 #================BATCHED BOO & NORM-SPEED MULTIPL======================
 
 
@@ -383,6 +393,8 @@ for video in dataset_batchedspeed_video:
 # 	video_s['sequence'] = np.concatenate((video_s['sequence'],video_b['sequence']), axis=1)
 
 
+
+'''
 
 '''
 #==================CO-OCC FREQ OBJS================
@@ -439,7 +451,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedvelocity_video):
+for index,i in enumerate(dataset_batchedboo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -515,7 +527,7 @@ faketrain_iterator_init = iterator.make_initializer(train_data_fakebatch)
 faketest_iterator_init = iterator.make_initializer(test_data_fakebatch)
 
 
-# so, to be even clearer, this is a "parameterized" op and its output depends on the particular iterator 
+# so, to clarify, this is a "parameterized" op and its output depends on the particular iterator 
 # initialization op executed before it during the session
 # therefore from now on all the ops in the graph are "parameterized" -> not specialized on train or test
 # IN OTHER WORDS, THE DATASET NOW BECOMES A PARAMETER THAT WE CAN SET DURING THE SESSION PHASE
@@ -523,7 +535,7 @@ faketest_iterator_init = iterator.make_initializer(test_data_fakebatch)
 next_batch = iterator.get_next()
 
 # split the batch in X, y, seq_len
-# they will be singularily used in different ops
+# they will be singularly used in different ops
 current_X_batch = tf.cast(next_batch[0], dtype=tf.float32)
 current_y_batch = next_batch[1]
 current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
@@ -548,7 +560,9 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 # accuracy
-correct_pred = tf.equal(tf.argmax(logits, 1), tf.argmax(current_y_batch, 1))
+y_pred = tf.argmax(logits, 1)
+y_true = tf.argmax(current_y_batch, 1)
+correct_pred = tf.equal(y_pred, y_true)
 accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32))
 
 init = tf.global_variables_initializer()
@@ -607,6 +621,12 @@ with tf.Session() as sess:
 		losses['train_acc'].append(train_acc)
 		losses['test_loss'].append(test_loss)
 		losses['test_acc'].append(test_acc)
+
+
+	sess.run(faketest_iterator_init)
+	test_y_true, test_y_pred = sess.run((y_true, y_pred),feed_dict={lstmstate_batch_size:test_fakebatch_size})
+
+	print(confusion_matrix(test_y_true, test_y_pred))
 
 	pickle.dump(losses, open('losses.pickle','wb'))
 
