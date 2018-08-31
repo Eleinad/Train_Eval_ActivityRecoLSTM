@@ -559,7 +559,7 @@ loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, 
 # optimization (only during training phase (OBVIOUSLY))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
-# accuracy
+# ops for accuracy and confusion matrix 
 y_pred = tf.argmax(logits, 1)
 y_true = tf.argmax(current_y_batch, 1)
 correct_pred = tf.equal(y_pred, y_true)
@@ -630,6 +630,8 @@ with tf.Session() as sess:
 	print(classid_to_classlbl)
 	print()
 	print(confusion_matrix(test_y_true, test_y_pred))
+	print()
+	print(classification_report(test_y_true, test_y_pred))
 
 	pickle.dump(losses, open('losses.pickle','wb'))
 
