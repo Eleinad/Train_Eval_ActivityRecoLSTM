@@ -196,7 +196,6 @@ for video in dataset_boo_video:
 
 
 
-'''
 #================AVG-SPEED and AVG-VELOCITY=========================
 
 def inside(start, end, c_start, c_end):
@@ -379,7 +378,7 @@ for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video
 		if i>=max_b[index]:
 			max_b[index] = i
 
-'''
+
 
 '''
 #================BATCHED BOO & NORM-SPEED MULTIPL======================
@@ -451,7 +450,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedboo_video):
+for index,i in enumerate(dataset_batchedspeed_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
