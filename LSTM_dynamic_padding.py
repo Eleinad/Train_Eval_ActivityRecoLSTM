@@ -81,7 +81,7 @@ classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 print(classid_to_classlbl)
 
 # filtering data -> videos must be at least 5 s
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5][:10]
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
 
 
 print('Full dataset len %d' % len(dataset_detection_video))
