@@ -81,10 +81,10 @@ classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 print(classid_to_classlbl)
 
 # filtering data -> videos must be at least 5 s
-dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
+dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5][:10]
 
 
-
+print('Full dataset len %d' % len(dataset_detection_video))
 
 
 #============true parameters==========
@@ -195,7 +195,7 @@ for video in dataset_boo_video:
 
 
 
-
+'''
 #================AVG-SPEED and AVG-VELOCITY=========================
 
 def inside(start, end, c_start, c_end):
@@ -378,7 +378,7 @@ for video_s, video_b in zip(dataset_batchedspeed_video, dataset_batchedboo_video
 		if i>=max_b[index]:
 			max_b[index] = i
 
-
+'''
 
 '''
 #================BATCHED BOO & NORM-SPEED MULTIPL======================
@@ -450,7 +450,7 @@ for video in dataset_cooc_video:
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedspeed_video):
+for index,i in enumerate(dataset_batchedboo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -459,17 +459,29 @@ for index,i in enumerate(dataset_batchedspeed_video):
 
 
 
-
-
 #==========splitting==============
 X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
 	 train_test_split(X,y,seq_len,test_size=0.2, random_state=0)#, stratify=y)
 
 
-print(len(X_train))
-print(len(X_test))
+print('Train len %d' % len(X_train))
+print('Test len %d' % len(X_test))
 
 
+
+# =====dataset statistics=====
+
+min_n_frame = min(seq_len)
+max_n_frame = max(seq_len)
+
+print('Full')
+print(np.histogram([i['sequence'].shape[0] for i in dataset_batchedboo_video], bins=range(min_n_frame,max_n_frame+50,50)))
+
+print('Train')
+print(np.histogram(seq_len_train, bins=range(min_n_frame,max_n_frame+50,50)))
+
+print('Test')
+print(np.histogram(seq_len_test, bins=range(min_n_frame,max_n_frame+50,50)))
 
 
 #-----------------------------------------------------------------------------
@@ -592,7 +604,7 @@ with tf.Session() as sess:
 			start_batch_time = time.time()
 			_, batch_loss = sess.run((optimizer, loss), feed_dict={lstmstate_batch_size:train_batch_size})
 			batch_time = str(datetime.timedelta(seconds=round(time.time()-start_batch_time, 2)))
-			print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
+			#print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
 
 		
 			# results = sess.run((current_X_batch, 
@@ -631,6 +643,9 @@ with tf.Session() as sess:
 	print(confusion_matrix(test_y_true, test_y_pred))
 	print()
 	print(classification_report(test_y_true, test_y_pred))
+	print()
+	misclassified_nframe = [seq_len[i[0]] for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
+	print(misclassified_nframe)
 
 	pickle.dump(losses, open('losses.pickle','wb'))
 
