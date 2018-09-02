@@ -510,6 +510,7 @@ zipped_test_data = list(zip(X_test,y_test,seq_len_test))
 
 
 #=========================graph===========================
+tf.set_random_seed(1234)
 
 lstmstate_batch_size = tf.placeholder(tf.int32, shape=[])
 
