@@ -600,7 +600,7 @@ logits = tf.layers.dense(states[1], units=max_class_id)
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch))
 
 # optimization (only during training phase (OBVIOUSLY))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(loss)
 
 # ops for accuracy and confusion matrix 
 y_pred = tf.argmax(logits, 1)
