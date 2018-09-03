@@ -524,7 +524,9 @@ n_epoch = 100
 train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
-learning_rate=0.0005
+#learning_rate=0.0005
+learning_rate=0.05
+
 # ********************************************************
 #!!!!IMPORTANTEEEEE!!!
 # handling last batch remainder
