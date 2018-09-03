@@ -510,7 +510,7 @@ zipped_test_data = list(zip(X_test,y_test,seq_len_test))
 
 
 #=========================graph===========================
-tf.set_random_seed(1234)
+#tf.set_random_seed(1234)
 
 lstmstate_batch_size = tf.placeholder(tf.int32, shape=[])
 
@@ -519,7 +519,7 @@ train_data = tf.data.Dataset.from_generator(lambda: zipped_train_data, (tf.int32
 test_data = tf.data.Dataset.from_generator(lambda: zipped_test_data, (tf.int32, tf.int32, tf.int32))
 
 # shuffle (whole) train_data
-train_data = train_data.shuffle(buffer_size=len(X))
+train_data = train_data.shuffle(buffer_size=len(X_train))
 
 # obtain a padded_batch (recall that we are working with sequences!)
 shape = ([None,len(X[0][0])],[max_class_id],[])
@@ -557,13 +557,16 @@ lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(lstm_in_cell_units, state_is_tuple=True
 #state_c, state_h = lstm_cell.zero_state(lstmstate_batch_size, tf.float32)
 #initial_state = tf.nn.rnn_cell.LSTMStateTuple(tf.Variable(state_c, trainable=False), tf.Variable(state_h, trainable=False))
 initial_state = lstm_cell.zero_state(lstmstate_batch_size, tf.float32)
-outputs, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
+_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
+
 
 # last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
-last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
+#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
 
 # logits
-logits = tf.layers.dense(last_step_output, units=max_class_id)
+#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
+#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
+logits = tf.layers.dense(states[1], units=max_class_id)
 
 # loss
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch))
@@ -579,7 +582,13 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32))
 
 init = tf.global_variables_initializer()
 
+# debugging & training visualization
+all_variables = tf.global_variables()
 
+for i in all_variables:
+	tf.summary.histogram(i.name.replace(':','_'), i)
+
+summaries = tf.summary.merge_all()
 
 losses = {
 		  'train_loss':[],
@@ -592,28 +601,36 @@ losses = {
 #==========================session==========================
 
 with tf.Session() as sess:
-	sess.run(init)
+	
+	sess.run(init)	
+	writer = tf.summary.FileWriter("variable_histograms")
 	
 	#***************** TRAINING ************************
 
 	for i in range(n_epoch):
+		writer.add_summary(sess.run(summaries), global_step=i)
+		
 		start_epoch_time = time.time()
 		print('\nEpoch: %d/%d' % ((i+1), n_epoch))
 		sess.run(train_iterator_init)
 		
 		for j in range(n_iteration):
+
 			start_batch_time = time.time()
 			_, batch_loss = sess.run((optimizer, loss), feed_dict={lstmstate_batch_size:train_batch_size})
 			batch_time = str(datetime.timedelta(seconds=round(time.time()-start_batch_time, 2)))
-			#print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
+			print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
+
+			# print('Batch')
+			# results = sess.run((#current_X_batch, 
+			# 					#current_y_batch, 
+			# 					#current_seq_len_batch,
+			# 					states), feed_dict={lstmstate_batch_size:train_batch_size})
+			# print(results[0][1])
+
+
 
 		
-			# results = sess.run((current_X_batch, 
-			# 					current_y_batch, 
-			# 					current_seq_len_batch))
-			# pprint(results[0].shape)
-
-
 		#****************** VALIDATION ******************
 		epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
 		print('Tot epoch time: %s' % (epoch_time))
@@ -649,7 +666,7 @@ with tf.Session() as sess:
 	print(misclassified_nframe)
 
 	pickle.dump(losses, open('losses.pickle','wb'))
-
+	
 
 
 
