@@ -160,7 +160,7 @@ for video in dataset_detection_video:
 
 
 
-
+'''
 #==============BATCHED BAG-OF-OBJS============
 
 dataset_batchedboo_video = []
@@ -193,7 +193,7 @@ for video in dataset_boo_video:
 # 	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
 # 	l.append([(n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
 
-
+'''
 
 '''
 #================AVG-SPEED and AVG-VELOCITY=========================
@@ -444,13 +444,41 @@ for video in dataset_cooc_video:
 
 
 '''
+dataset_cooc_video = []
+
+for video in dataset_boo_video:
+
+	n_frame = video['final_nframes']
+	n_batch = 9
+
+	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
+
+	iteration = int(n_frame/n_batch)
+	cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
+
+	for i in range(iteration):
+		frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
+		frame_batch = np.where(frame_batch>0,1,0)
+		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
+
+		cooc_flat_index = 0
+		for j in range(n_feature-1):
+			for k in range((j+1),n_feature):
+				cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
+				cooc_flat_index+=1
+
+
+	dataset_cooc_video.append({'class_id': video['class_id'],
+                              'final_nframes': video['final_nframes'],
+                              'reduced_fps':video['reduced_fps'],
+                              'sequence': cooc_flat_seq_matrix})#np.where(cooc_flat_seq_matrix>0,1,0)
 
 
 #============final transformation (sequence and one_hot)===========
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_batchedboo_video):
+for index,i in enumerate(dataset_cooc_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
@@ -475,7 +503,7 @@ min_n_frame = min(seq_len)
 max_n_frame = max(seq_len)
 
 print('Full')
-print(np.histogram([i['sequence'].shape[0] for i in dataset_batchedboo_video], bins=range(min_n_frame,max_n_frame+50,50)))
+print(np.histogram([i['sequence'].shape[0] for i in dataset_cooc_video], bins=range(min_n_frame,max_n_frame+50,50)))
 
 print('Train')
 print(np.histogram(seq_len_train, bins=range(min_n_frame,max_n_frame+50,50)))
