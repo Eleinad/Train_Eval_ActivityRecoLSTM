@@ -449,7 +449,7 @@ dataset_cooc_video = []
 for video in dataset_boo_video:
 
 	n_frame = video['final_nframes']
-	n_batch = 15
+	n_batch = 30
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -692,7 +692,7 @@ with tf.Session() as sess:
 	print()
 	print(classification_report(test_y_true, test_y_pred))
 	print()
-	misclassified_nframe = [seq_len[i[0]] for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
+	misclassified_nframe = [seq_len[i[0]]*n_batch for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
 	print(misclassified_nframe)
 
 	pickle.dump(losses, open('losses.pickle','wb'))
