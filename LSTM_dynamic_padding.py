@@ -449,7 +449,7 @@ dataset_cooc_video = []
 for video in dataset_boo_video:
 
 	n_frame = video['final_nframes']
-	n_batch = 9
+	n_batch = 15
 
 	video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -524,8 +524,8 @@ n_epoch = 100
 train_batch_size=32
 train_fakebatch_size = len(X_train)
 test_fakebatch_size = len(X_test)
-#learning_rate=0.0005
-learning_rate=0.05
+learning_rate=0.0005
+#learning_rate=0.05
 
 # ********************************************************
 #!!!!IMPORTANTEEEEE!!!
@@ -602,7 +602,7 @@ logits = tf.layers.dense(states[1], units=max_class_id)
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch))
 
 # optimization (only during training phase (OBVIOUSLY))
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(loss)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 # ops for accuracy and confusion matrix 
 y_pred = tf.argmax(logits, 1)
