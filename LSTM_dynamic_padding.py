@@ -530,7 +530,7 @@ min_n_frame = min(seq_len)
 max_n_frame = max(seq_len)
 
 print('Full')
-print(np.histogram([i['sequence'].shape[0] for i in dataset_cooc_video], bins=range(min_n_frame,max_n_frame+50,50)))
+print(np.histogram([i['sequence'].shape[0] for i in dataset_batchedboo_video], bins=range(min_n_frame,max_n_frame+50,50)))
 
 print('Train')
 print(np.histogram(seq_len_train, bins=range(min_n_frame,max_n_frame+50,50)))
