@@ -160,7 +160,7 @@ for video in dataset_detection_video:
 
 
 
-'''
+
 #==============BATCHED BAG-OF-OBJS============
 
 dataset_batchedboo_video = []
@@ -193,7 +193,30 @@ for video in dataset_boo_video:
 # 	n_b = video_b['sequence'].shape[0]*video_b['sequence'].shape[1]
 # 	l.append([(n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
 
-'''
+
+
+from sklearn.cluster import KMeans
+
+
+sequences = dataset_batchedboo_video[0]['sequence']
+for i in range(1,len(dataset_batchedboo_video)):
+	sequences = np.vstack((sequences,dataset_batchedboo_video[i]['sequence']))
+
+print(sequences.shape)
+
+kmeans = KMeans(n_clusters=50, random_state=0, n_jobs=-1).fit(sequences)
+labels = list(kmeans.labels_)
+codebook = list(kmeans.cluster_centers_)
+
+for video in dataset_batchedboo_video:
+	curr_seq_len = video['sequence'].shape[0]
+	curr_labels = labels[:curr_seq_len]
+	for j in range(curr_seq_len):
+		video['sequence'][j,:] = codebook[curr_labels[j]]
+	labels = labels[curr_seq_len:]
+
+
+
 
 '''
 #================AVG-SPEED and AVG-VELOCITY=========================
@@ -444,6 +467,8 @@ for video in dataset_cooc_video:
 
 
 '''
+
+'''
 dataset_cooc_video = []
 
 for video in dataset_boo_video:
@@ -473,12 +498,14 @@ for video in dataset_boo_video:
                               'reduced_fps':video['reduced_fps'],
                               'sequence': cooc_flat_seq_matrix})#np.where(cooc_flat_seq_matrix>0,1,0)
 
+'''
+
 
 #============final transformation (sequence and one_hot)===========
 
 X,y,seq_len=[],[],[]
 
-for index,i in enumerate(dataset_cooc_video):
+for index,i in enumerate(dataset_batchedboo_video):
 	X.append([frame_detection.tolist() for frame_detection in i['sequence']])
 	one_hot = [0]*max_class_id
 	one_hot[i['class_id']-1] = 1
