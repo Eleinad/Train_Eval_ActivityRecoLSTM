@@ -204,7 +204,7 @@ for i in range(1,len(dataset_batchedboo_video)):
 
 print(sequences.shape)
 
-kmeans = KMeans(n_clusters=100, random_state=0, n_jobs=-1).fit(sequences)
+kmeans = KMeans(n_clusters=10, random_state=0, n_jobs=-1).fit(sequences)
 labels = list(kmeans.labels_)
 codebook = list(kmeans.cluster_centers_)
 
