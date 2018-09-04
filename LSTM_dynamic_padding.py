@@ -203,8 +203,9 @@ for i in range(1,len(dataset_batchedboo_video)):
 	sequences = np.vstack((sequences,dataset_batchedboo_video[i]['sequence']))
 
 print(sequences.shape)
+print(np.unique(sequences,axis=0).shape)
 
-kmeans = KMeans(n_clusters=10, random_state=0, n_jobs=-1).fit(sequences)
+kmeans = KMeans(n_clusters=200, random_state=0, n_jobs=-1).fit(sequences)
 labels = list(kmeans.labels_)
 codebook = list(kmeans.cluster_centers_)
 
