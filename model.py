@@ -1,0 +1,234 @@
+import tensorflow as tf
+import time
+import datetime
+from sklearn.metrics import confusion_matrix, classification_report
+import pickle
+
+
+
+learning_rate=0.0005
+
+
+
+def graph(splitted_data):
+
+	X_train = splitted_data[0]
+	X_test = splitted_data[1]
+	y_train = splitted_data[2]
+	y_test = splitted_data[3]
+	seq_len_train =splitted_data[4]
+	seq_len_test = splitted_data[5]
+
+
+	lstm_in_cell_units=20 # design choice (hyperparameter)
+	train_fakebatch_size = len(X_train)
+	test_fakebatch_size = len(X_test)
+
+	zipped_train_data = list(zip(X_train,y_train,seq_len_train))
+	zipped_test_data = list(zip(X_test,y_test,seq_len_test))
+
+
+	#=========================graph===========================
+	#tf.set_random_seed(1234)
+
+	batch_size = tf.placeholder(tf.int32, shape=[], name='batch_size')
+
+	# dataset
+	train_data = tf.data.Dataset.from_generator(lambda: zipped_train_data, (tf.int32, tf.int32, tf.int32))
+	test_data = tf.data.Dataset.from_generator(lambda: zipped_test_data, (tf.int32, tf.int32, tf.int32))
+
+	# shuffle (whole) train_data
+	train_data = train_data.shuffle(buffer_size=len(X_train))
+
+	# obtain a padded_batch (recall that we are working with sequences!)
+	shape = ([None,len(X_train[0][0])],[len(y_train[0])],[])
+	train_data_batch = train_data.padded_batch(tf.cast(batch_size,tf.int64), padded_shapes=shape)
+	# fake batches, they're the entire train and test dataset -> just needed to pad them!
+	# they will be used in the validation phase (not for training)
+	train_data_fakebatch = train_data.padded_batch(tf.cast(batch_size,tf.int64), padded_shapes=shape) 
+	test_data_fakebatch = test_data.padded_batch(tf.cast(batch_size,tf.int64), padded_shapes=shape) 
+
+	# iterator structure(s) - it is needed to make a reinitializable iterator (TF docs) -> dataset parametrization (without placeholders)
+	iterator = tf.data.Iterator.from_structure(train_data_batch.output_types, train_data_batch.output_shapes)
+
+
+	# this is the op that makes the magic -> dataset parametrization
+	train_iterator_init = iterator.make_initializer(train_data_batch, name='train_iterator_init')
+	faketrain_iterator_init = iterator.make_initializer(train_data_fakebatch, name='faketrain_iterator_init')
+	faketest_iterator_init = iterator.make_initializer(test_data_fakebatch, name='faketest_iterator_init')
+
+
+	# so, to clarify, this is a "parameterized" op and its output depends on the particular iterator 
+	# initialization op executed before it during the session
+	# therefore from now on all the ops in the graph are "parameterized" -> not specialized on train or test
+	# IN OTHER WORDS, THE DATASET NOW BECOMES A PARAMETER THAT WE CAN SET DURING THE SESSION PHASE
+	# THANKS TO THE EXECUTION OF THE OP train_iterator_init OR test_iterator_init BEFORE THE EXECUTION OF THE OP next_batch
+	next_batch = iterator.get_next()
+
+	# split the batch in X, y, seq_len
+	# they will be singularly used in different ops
+	current_X_batch = tf.cast(next_batch[0], dtype=tf.float32)
+	current_y_batch = next_batch[1]
+	current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
+
+	# lstm
+	lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(lstm_in_cell_units, state_is_tuple=True)
+	#state_c, state_h = lstm_cell.zero_state(batch_size, tf.float32)
+	#initial_state = tf.nn.rnn_cell.LSTMStateTuple(tf.Variable(state_c, trainable=False), tf.Variable(state_h, trainable=False))
+	initial_state = lstm_cell.zero_state(batch_size, tf.float32)
+	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
+
+
+	# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
+	#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
+
+	# logits
+	#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
+	#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
+	logits = tf.layers.dense(states[1], units=len(y_train[0]), name='logits')
+
+	# loss
+	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch), name='loss')
+
+	# optimization (only during training phase (OBVIOUSLY))
+	optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss, name='optimizer')
+
+	# ops for accuracy and confusion matrix 
+	y_pred = tf.argmax(logits, 1)
+	y_true = tf.argmax(current_y_batch, 1)
+	correct_pred = tf.equal(y_pred, y_true)
+	accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32), name='accuracy')
+
+	init = tf.global_variables_initializer()
+
+	# debugging & training visualization
+	all_variables = tf.global_variables()
+
+	for i in all_variables:
+		tf.summary.histogram(i.name.replace(':','_'), i)
+
+	summaries = tf.summary.merge_all()
+
+	# building collections
+	train_op_dict = {'init':init,
+					 'batch_size':batch_size,
+					 'train_iterator_init':train_iterator_init,
+					 'faketrain_iterator_init':faketrain_iterator_init,
+					 'faketest_iterator_init':faketest_iterator_init,
+					 'logits':logits,
+					 'loss':loss,
+					 'optimizer':optimizer,
+					 'summaries':summaries,
+					 'y_true':y_true,
+					 'y_pred':y_pred,
+					 'accuracy':accuracy}
+
+	tf.get_default_graph().add_to_collection('my_train_op',train_op_dict)
+
+
+
+
+
+def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
+
+	graph=tf.get_default_graph()
+	train_op_dict = graph.get_collection('my_train_op')[0]
+
+	losses = {
+		  'train_loss':[],
+		  'train_acc':[],
+		  'test_loss':[],
+		  'test_acc':[]
+		  }
+
+	X_train = splitted_data[0]
+	X_test = splitted_data[1]
+
+	faketrain_batch_size = len(X_train)
+	faketest_batch_size = len(X_test)
+
+	n_iteration = len(X_train)//train_batch_size
+
+
+
+	with tf.Session() as sess:
+		
+		sess.run(train_op_dict['init'])	
+		writer = tf.summary.FileWriter("variable_histograms")
+		
+
+		#***************** TRAINING ********************
+		for i in range(n_epoch):
+			writer.add_summary(sess.run(train_op_dict['summaries']), global_step=i)
+			
+			start_epoch_time = time.time()
+			print('\nEpoch: %d/%d' % ((i+1), n_epoch))
+			sess.run(train_op_dict['train_iterator_init'], feed_dict={train_op_dict['batch_size']:train_batch_size})
+			
+			for j in range(n_iteration):
+
+				start_batch_time = time.time()
+				_, batch_loss = sess.run((train_op_dict['optimizer'], train_op_dict['loss']), feed_dict={train_op_dict['batch_size']:train_batch_size})
+				batch_time = str(datetime.timedelta(seconds=round(time.time()-start_batch_time, 2)))
+				print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
+
+				# print('Batch')
+				# results = sess.run((#current_X_batch, 
+				# 					#current_y_batch, 
+				# 					#current_seq_len_batch,
+				# 					states), feed_dict={lstmstate_batch_size:train_batch_size})
+				# print(results[0][1])
+
+
+			epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
+			print('Tot epoch time: %s' % (epoch_time))
+			
+			
+
+			#****************** VALIDATION (after each epoch) ******************
+			# whole training set
+			sess.run(train_op_dict['faketrain_iterator_init'], 
+					 feed_dict={train_op_dict['batch_size']:faketrain_batch_size})
+			train_loss, train_acc = sess.run((train_op_dict['loss'], train_op_dict['accuracy']),
+											 feed_dict={train_op_dict['batch_size']:faketrain_batch_size})
+			print('\nTrain_loss: %f' % train_loss)
+			print('Train_acc: %f' % train_acc)
+
+			# whole test set
+			sess.run(train_op_dict['faketest_iterator_init'], 
+					 feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+			test_loss, test_acc = sess.run((train_op_dict['loss'], train_op_dict['accuracy']),
+											feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+			print('Test_loss: %f' % test_loss)
+			print('Test_acc: %f' % test_acc)
+
+			losses['train_loss'].append(train_loss)
+			losses['train_acc'].append(train_acc)
+			losses['test_loss'].append(test_loss)
+			losses['test_acc'].append(test_acc)
+
+
+		#************* CONFUSION MATRIX *************
+		sess.run(train_op_dict['faketest_iterator_init'], 
+				 feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+		test_y_true, test_y_pred = sess.run((train_op_dict['y_true'], train_op_dict['y_pred']),feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+
+
+		print()
+		print(classlbl_to_classid)
+		print()
+		print(confusion_matrix(test_y_true, test_y_pred))
+		print()
+		print(classification_report(test_y_true, test_y_pred))
+		#print()
+		#misclassified_nframe = [seq_len[i[0]]*n_batch for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
+		#print(misclassified_nframe)
+
+		pickle.dump(losses, open('losses.pickle','wb'))
+
+
+
+
+
+
+

@@ -63,7 +63,7 @@ dataset_detection_video = pickle.load(open('dataset_detection_video.pickle', 'rb
 pickle_path = './PersonalCare/pickle'
 dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path) if 'face' not in pickle.load(open(pickle_path+'/'+video_pickle,'rb'))['class_id']]
     
-classlbl_to_classid = {} 
+classlbl_to_classid = {}
 classid = 0
 
 for i in dataset_detection_video:
@@ -71,21 +71,31 @@ for i in dataset_detection_video:
     if classlbl not in classlbl_to_classid:
         classlbl_to_classid[classlbl] = classid
         classid += 1
-
     i['class_id'] = classlbl_to_classid[classlbl]
 
 
 classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
-
-print(classid_to_classlbl)
-
 # filtering data -> videos must be at least 5 s
 dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
 
+# classes distribution
+class_statistics = {}
 
-print('Full dataset len %d' % len(dataset_detection_video))
+for i in dataset_detection_video:
+    if classlbl not in class_statistics:
+    	class_statistics[classlbl] = 1
+    else:
+    	class_statistics[classlbl] += 1
 
+for activity in class_statistics.keys():
+	activity = (class_statistics[activity], class_statistics[activity]*100/len(dataset_detection_video))
+
+print('Video: %d' % len(dataset_detection_video))
+print('Activities:')
+print(classlbl_to_classid)
+print('Activity distribution:')
+print(class_statistics)
 
 #============true parameters==========
 
@@ -194,7 +204,7 @@ for video in dataset_boo_video:
 # 	l.append([(n_b-np.count_nonzero(video_b['sequence']))*100/n_b])
 
 
-
+'''
 from sklearn.cluster import KMeans
 
 
@@ -216,7 +226,7 @@ for video in dataset_batchedboo_video:
 		video['sequence'][j,:] = codebook[curr_labels[j]]
 	labels = labels[curr_seq_len:]
 
-
+'''
 
 
 '''
