@@ -19,4 +19,4 @@ tensors = [op.values() for op in tf.get_default_graph().get_operations()]
 
 #print(tf.get_default_graph().collections)
 
-model.train(splitted_data, classlbl_to_classid, 10, 32)
+model.train(splitted_data, classlbl_to_classid, 100, 32)
