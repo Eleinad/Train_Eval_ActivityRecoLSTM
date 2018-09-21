@@ -3,12 +3,14 @@ import os
 from pprint import pprint
 from sklearn.model_selection import train_test_split
 import numpy as np
+from PIL import Image
+
 
 
 
 #============data parameters==========
 
-max_class_id = 7 # y_true = activity
+max_class_id = 3 # y_true = activity
 n_feature = 33 # bag-of-objects
 
 
@@ -16,8 +18,20 @@ n_feature = 33 # bag-of-objects
 def load_data():
 
     pickle_path = './PersonalCare/pickle'
-    dataset_detection_video = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path) if 'face' not in pickle.load(open(pickle_path+'/'+video_pickle,'rb'))['class_id']]
-        
+    trimmed_pickle = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path) if 'trimmed' in video_pickle]
+    print(len(trimmed_pickle))
+    dataset_detection_video = []
+
+    for pic in trimmed_pickle:
+        for seg in pic['segments'].values():
+            dataset_detection_video.append({'video_name':pic['video_name'],
+                                            'class_id':pic['class_id'],
+                                            'fps':pic['fps'],
+                                            'frames':int(seg['n_frames']),
+                                            'frames_info':seg['frames_info']})
+
+
+
     classlbl_to_classid = {}
     classid = 0
 
@@ -32,7 +46,7 @@ def load_data():
     classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
     # filtering data -> videos must be at least 5 s
-    dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
+    #dataset_detection_video = [i for i in dataset_detection_video if (i['final_nframes']//i['reduced_fps']) >= 5]
 
     # classes distribution
     class_statistics = {}
@@ -66,7 +80,7 @@ def bag_of_objects(dataset_detection_video):
 
     for video in dataset_detection_video:
         
-        video_boo_matrix = np.zeros((video['final_nframes'],n_feature), dtype=np.uint8)
+        video_boo_matrix = np.zeros((video['frames'],n_feature), dtype=np.uint8)
 
         for index, frame in enumerate(video['frames_info']) :
             boo = {}
@@ -82,8 +96,8 @@ def bag_of_objects(dataset_detection_video):
 
           
         dataset_boo_video.append({'class_id': video['class_id'],
-                                  'final_nframes': video['final_nframes'],
-                                  'reduced_fps':video['reduced_fps'],
+                                  'frames': video['frames'],
+                                  'fps':video['fps'],
                                   'sequence': video_boo_matrix})
 
     return dataset_boo_video
@@ -100,7 +114,7 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
 
     for video in dataset_boo_video:
 
-        n_frame = video['final_nframes']
+        n_frame = video['frames']
         n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -112,8 +126,8 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
             video_batchedboo_matrix[i] = np.sum(frame_batch, axis=0)
 
         dataset_batchedboo_video.append({'class_id': video['class_id'],
-                                  'final_nframes': video['final_nframes'],
-                                  'reduced_fps':video['reduced_fps'],
+                                  'frames': video['frames'],
+                                  'fps':video['fps'],
                                   'sequence': video_batchedboo_matrix}) 
 
     return dataset_batchedboo_video
@@ -130,7 +144,7 @@ def cooccurence(dataset_detection_video, batch_len):
 
     for video in dataset_boo_video:
 
-        n_frame = video['final_nframes']
+        n_frame = video['frames']
         n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -151,8 +165,8 @@ def cooccurence(dataset_detection_video, batch_len):
 
 
         dataset_cooc_video.append({'class_id': video['class_id'],
-                                  'final_nframes': video['final_nframes'],
-                                  'reduced_fps':video['reduced_fps'],
+                                  'frames': video['frames'],
+                                  'fps':video['fps'],
                                   'sequence': cooc_flat_seq_matrix})#np.where(cooc_flat_seq_matrix>0,1,0)
     return dataset_cooc_video
 
@@ -212,8 +226,8 @@ def kine(dataset_detection_video, batch_len):
                     binary_sequence[index,i-1] = 1
 
 
-        #img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
-        #img.show()
+        img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
+        img.show()
 
 
         # costruzione di objid_to_contiguous_intervals
@@ -276,7 +290,7 @@ def kine(dataset_detection_video, batch_len):
         # sfruttando queste due vengono costruite le features finali
 
 
-        n_frame = video['final_nframes']
+        n_frame = video['frames']
         n_batch = batch_len
 
         video_batchedspeed_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -303,12 +317,12 @@ def kine(dataset_detection_video, batch_len):
 
         
         dataset_batchedspeed_video.append({'class_id': video['class_id'],
-                                  'final_nframes': video['final_nframes'],
-                                  'reduced_fps':video['reduced_fps'],
+                                  'frames': video['frames'],
+                                  'fps':video['fps'],
                                   'sequence': video_batchedspeed_matrix})
         dataset_batchedvelocity_video.append({'class_id': video['class_id'],
-                                  'final_nframes': video['final_nframes'],
-                                  'reduced_fps':video['reduced_fps'],
+                                  'frames': video['frames'],
+                                  'fps':video['fps'],
                                   'sequence': video_batchedvelocity_matrix})
 
     return dataset_batchedspeed_video, dataset_batchedvelocity_video

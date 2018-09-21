@@ -3,6 +3,7 @@ import time
 import datetime
 from sklearn.metrics import confusion_matrix, classification_report
 import pickle
+import numpy as np
 
 
 
@@ -110,29 +111,56 @@ def graph(splitted_data):
 	summaries = tf.summary.merge_all()
 
 	# building collections
-	train_op_dict = {'init':init,
-					 'batch_size':batch_size,
-					 'train_iterator_init':train_iterator_init,
-					 'faketrain_iterator_init':faketrain_iterator_init,
-					 'faketest_iterator_init':faketest_iterator_init,
-					 'logits':logits,
-					 'loss':loss,
-					 'optimizer':optimizer,
-					 'summaries':summaries,
-					 'y_true':y_true,
-					 'y_pred':y_pred,
-					 'accuracy':accuracy}
+	train_op_list = [init,
+					 batch_size,
+					 train_iterator_init,
+					 faketrain_iterator_init,
+					 faketest_iterator_init,
+					 logits,
+					 loss,
+					 optimizer,
+					 summaries,
+					 y_true,
+					 y_pred,
+					 accuracy]
+	
+	for op in train_op_list:
+		tf.get_default_graph().add_to_collection('my_train_op',op)
 
-	tf.get_default_graph().add_to_collection('my_train_op',train_op_dict)
+	inference_op_list = [batch_size,
+						 y_true,
+						 y_pred]
+	
+	for op in inference_op_list:
+		tf.get_default_graph().add_to_collection('my_inference_op',op)
 
+	hyperparameters = []
 
+	# exporting graph
+	tf.train.export_meta_graph(filename='./tmp/graph.meta')
 
 
 
 def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 
 	graph=tf.get_default_graph()
-	train_op_dict = graph.get_collection('my_train_op')[0]
+	train_op_list = graph.get_collection('my_train_op')
+	
+	init = train_op_list[0]
+	batch_size = train_op_list[1]
+	train_iterator_init = train_op_list[2]
+	faketrain_iterator_init = train_op_list[3]
+	faketest_iterator_init = train_op_list[4]
+	logits = train_op_list[5]
+	loss = train_op_list[6]
+	optimizer = train_op_list[7]
+	summaries = train_op_list[8]
+	y_true = train_op_list[9]
+	y_pred = train_op_list[10]
+	accuracy = train_op_list[11]
+	saver = tf.train.Saver(max_to_keep=3)
+
+
 
 	losses = {
 		  'train_loss':[],
@@ -153,22 +181,22 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 
 	with tf.Session() as sess:
 		
-		sess.run(train_op_dict['init'])	
+		sess.run(init)	
 		writer = tf.summary.FileWriter("variable_histograms")
 		
 
 		#***************** TRAINING ********************
 		for i in range(n_epoch):
-			writer.add_summary(sess.run(train_op_dict['summaries']), global_step=i)
+			writer.add_summary(sess.run(summaries), global_step=i)
 			
 			start_epoch_time = time.time()
 			print('\nEpoch: %d/%d' % ((i+1), n_epoch))
-			sess.run(train_op_dict['train_iterator_init'], feed_dict={train_op_dict['batch_size']:train_batch_size})
+			sess.run(train_iterator_init, feed_dict={batch_size:train_batch_size})
 			
 			for j in range(n_iteration):
 
 				start_batch_time = time.time()
-				_, batch_loss = sess.run((train_op_dict['optimizer'], train_op_dict['loss']), feed_dict={train_op_dict['batch_size']:train_batch_size})
+				_, batch_loss = sess.run((optimizer, loss), feed_dict={batch_size:train_batch_size})
 				batch_time = str(datetime.timedelta(seconds=round(time.time()-start_batch_time, 2)))
 				print('Batch: %d/%d - Loss: %f - Time: %s' % ((j+1), n_iteration, batch_loss, batch_time))
 
@@ -182,23 +210,24 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 
 			epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
 			print('Tot epoch time: %s' % (epoch_time))
-			
-			
+
+			save_path = saver.save(sess, "./tmp/model.ckpt", global_step=i, write_meta_graph=False)
+
 
 			#****************** VALIDATION (after each epoch) ******************
 			# whole training set
-			sess.run(train_op_dict['faketrain_iterator_init'], 
-					 feed_dict={train_op_dict['batch_size']:faketrain_batch_size})
-			train_loss, train_acc = sess.run((train_op_dict['loss'], train_op_dict['accuracy']),
-											 feed_dict={train_op_dict['batch_size']:faketrain_batch_size})
+			sess.run(faketrain_iterator_init, 
+					 feed_dict={batch_size:faketrain_batch_size})
+			train_loss, train_acc = sess.run((loss, accuracy),
+											 feed_dict={batch_size:faketrain_batch_size})
 			print('\nTrain_loss: %f' % train_loss)
 			print('Train_acc: %f' % train_acc)
 
 			# whole test set
-			sess.run(train_op_dict['faketest_iterator_init'], 
-					 feed_dict={train_op_dict['batch_size']:faketest_batch_size})
-			test_loss, test_acc = sess.run((train_op_dict['loss'], train_op_dict['accuracy']),
-											feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+			sess.run(faketest_iterator_init, 
+					 feed_dict={batch_size:faketest_batch_size})
+			test_loss, test_acc = sess.run((loss, accuracy),
+											feed_dict={batch_size:faketest_batch_size})
 			print('Test_loss: %f' % test_loss)
 			print('Test_acc: %f' % test_acc)
 
@@ -209,9 +238,14 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 
 
 		#************* CONFUSION MATRIX *************
-		sess.run(train_op_dict['faketest_iterator_init'], 
-				 feed_dict={train_op_dict['batch_size']:faketest_batch_size})
-		test_y_true, test_y_pred = sess.run((train_op_dict['y_true'], train_op_dict['y_pred']),feed_dict={train_op_dict['batch_size']:faketest_batch_size})
+		sess.run(faketest_iterator_init, 
+				 feed_dict={batch_size:faketest_batch_size})
+		test_y_true, test_y_pred = sess.run((y_true, y_pred),feed_dict={batch_size:faketest_batch_size})
+
+		for i in tf.get_default_graph().get_collection('trainable_variables'):
+			print(sess.run(i)[0])
+
+
 
 
 		print()
@@ -232,3 +266,97 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 
 
 
+def predict(X, y, seq):
+
+	fakeinference_batch_size = len(X)
+	zipped_inference_data = list(zip(X,y,seq))
+
+	tf.reset_default_graph()
+	tf.train.import_meta_graph('./tmp/graph.meta')
+	#print(tf.get_default_graph().collections)
+	#print(tf.get_default_graph().get_collection('trainable_variables'))
+	pretrained_weights = tf.get_default_graph().get_collection('trainable_variables')
+	print(pretrained_weights)
+	tf.reset_default_graph()
+
+
+	inference_data = tf.data.Dataset.from_generator(lambda: zipped_inference_data, (tf.int32, tf.int32, tf.int32))
+
+	shape = ([None,len(X[0][0])],[len(y[0])],[])
+	inference_data_fakebatch = inference_data.padded_batch(fakeinference_batch_size, padded_shapes=shape) 
+
+	#iterator = tf.data.Iterator.from_structure(inference_data_fakebatch.output_types, inference_data_fakebatch.output_shapes)
+
+	#fakeinference_iterator_init = iterator.make_initializer(inference_data_fakebatch, name='fakeinference_iterator_init')
+
+	iterator = inference_data_fakebatch.make_one_shot_iterator()
+
+	next_batch = iterator.get_next()
+
+	current_X_batch = tf.cast(next_batch[0], dtype=tf.float32)
+	current_y_batch = next_batch[1]
+	current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
+
+	# lstm
+	lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(20, state_is_tuple=True)
+	initial_state = lstm_cell.zero_state(fakeinference_batch_size, tf.float32)
+	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
+
+	# logits
+	logits = tf.layers.dense(states[1], units=7, name='logits')
+
+	# ops for accuracy and confusion matrix 
+	y_pred = tf.argmax(logits, 1)
+	y_true = tf.argmax(current_y_batch, 1)
+	correct_pred = tf.equal(y_pred, y_true)
+	accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32), name='accuracy')
+
+	graph=tf.get_default_graph()
+	#print(tf.get_default_graph().collections)
+	#print(tf.get_default_graph().get_collection('trainable_variables'))
+	
+
+	# restoring pretrained weights
+	# restore_w_ops = []
+	# for i,j in zip(graph.get_collection('trainable_variables'),pretrained_weights):
+	# 	scope = i.name[0:i.name.rfind('/')]
+	# 	print(scope, i.name[i.name.rfind('/')+1:i.name.find(':')])
+	# 	with tf.variable_scope(scope, reuse=True):
+	# 		restore_w_ops.append(tf.get_variable(i.name[i.name.rfind('/')+1:i.name.find(':')],  
+	# 							 initializer=j))
+
+
+	# with tf.variable_scope('rnn/basic_lstm_cell', reuse=True):
+	# 	a = tf.get_variable('kernel',  initializer=np.ones((53,80)))
+
+	# with tf.variable_scope('prova'):
+	# 	b = tf.get_variable('kernel',  initializer=pretrained_weights[0].initialized_value())
+
+	with tf.variable_scope('prova'):
+		a = tf.Variable(pretrained_weights[0], name='kernel')
+
+
+
+	with tf.Session() as sess:
+		# a = sess.run(tf.report_uninitialized_variables())
+		# print(a)
+		# # saver.restore(sess, tf.train.latest_checkpoint('./tmp'))
+		# for i,j in zip(graph.get_collection('trainable_variables'),pretrained_trainable_variables):
+		# 	value = sess.run(i)
+		# 	i.load(value, sess)
+		#sess.run(init)
+		from pprint import pprint
+		pprint(tf.get_default_graph().get_collection('variables'))
+		sess.run(a.initializer)
+		print(sess.run(tf.report_uninitialized_variables()))
+		for i in tf.get_default_graph().get_collection('variables'):
+			if 'kernel' in i.name and ('rnn' in i.name or 'prova' in i.name):
+				print(i.name)
+				print(sess.run(i)[0])
+		#for op in restore_w_ops:
+		
+		b = sess.run(tf.report_uninitialized_variables())
+		print(b)
+		#test_y_true, test_y_pred, accuracy = sess.run((y_true, y_pred, accuracy))
+
+	#print(test_y_true, test_y_pred, accuracy) 
