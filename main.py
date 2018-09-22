@@ -1,4 +1,4 @@
-import data_preprocessing_mask_intersection
+import data_preprocessing
 import model
 import tensorflow as tf
 
@@ -9,7 +9,7 @@ import tensorflow as tf
 
 
 # data loading (pickle)
-dataset_detection_video, classlbl_to_classid = data_preprocessing_mask_intersection.load_data()
+dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
 #features
 # dataset_intersection_video = data_preprocessing_mask_intersection.cointersection(dataset_detection_video, 9)
@@ -17,7 +17,7 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing_mask_intersect
 # dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
 # #features
-dataset_batchedboo_video = data_preprocessing_mask_intersection.bag_of_objects(dataset_detection_video)
+dataset_batchedboo_video = data_preprocessing.bag_of_objects(dataset_detection_video)
 # #dataset = data_preprocessing.kine([dataset_detection_video[0]], 9)
 
 # # splitting train & test
