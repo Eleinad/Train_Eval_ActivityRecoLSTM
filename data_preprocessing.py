@@ -10,27 +10,41 @@ from PIL import Image
 
 #============data parameters==========
 
-max_class_id = 3 # y_true = activity
+max_class_id = 7 # y_true = activity
 n_feature = 33 # bag-of-objects
 
 
 # loading data from serialized .pickle files
 def load_data():
 
-    pickle_path = './PersonalCare/pickle'
-    trimmed_pickle = [pickle.load(open(pickle_path+'/'+video_pickle,'rb')) for video_pickle in os.listdir(pickle_path) if 'trimmed' in video_pickle]
-    print(len(trimmed_pickle))
     dataset_detection_video = []
 
-    for pic in trimmed_pickle:
-        for seg in pic['segments'].values():
-            dataset_detection_video.append({'video_name':pic['video_name'],
-                                            'class_id':pic['class_id'],
-                                            'fps':pic['fps'],
-                                            'frames':int(seg['n_frames']),
-                                            'frames_info':seg['frames_info']})
+    pickle_path = './PersonalCare/pickle'
+
+    for video_pickle in os.listdir(pickle_path):
+        if 'trimmed' in video_pickle:
+            pic = pickle.load(open(pickle_path+'/'+video_pickle,'rb'))
+            for curr_seg,seg in pic['segments'].items():
+                nomask_frame_info = []
+                for frame in seg['frames_info']:
+                    nomask_frame_info.append({'original_index':frame['original_index'],
+                                                'obj_class_ids':frame['obj_class_ids'],
+                                                'obj_rois':frame['obj_rois']})
+                
+                nomask_pic = {'video_name':pic['video_name'],
+                            'class_id':pic['class_id'],
+                            'seg_id':curr_seg,
+                            'seg':pic['n_segments'],
+                            'fps':pic['fps'],
+                            'frames':len(seg['frames_info']),
+                            'frames_info':nomask_frame_info}
+
+                dataset_detection_video.append(nomask_pic)
+
+    print(len(dataset_detection_video))
 
 
+    dataset_detection_video = [video for video in dataset_detection_video if video['frames'] > 0]
 
     classlbl_to_classid = {}
     classid = 0
@@ -53,12 +67,12 @@ def load_data():
 
     for video in dataset_detection_video:
         if classid_to_classlbl[video['class_id']] not in class_statistics:
-        	class_statistics[classid_to_classlbl[video['class_id']]] = 1
+            class_statistics[classid_to_classlbl[video['class_id']]] = 1
         else:
-        	class_statistics[classid_to_classlbl[video['class_id']]] += 1
+            class_statistics[classid_to_classlbl[video['class_id']]] += 1
 
     for activity in class_statistics.keys():
-    	class_statistics[activity] = (class_statistics[activity], round(class_statistics[activity]*100/len(dataset_detection_video)))
+        class_statistics[activity] = (class_statistics[activity], round(class_statistics[activity]*100/len(dataset_detection_video)))
 
     print('Video: %d' % len(dataset_detection_video))
     print()
@@ -95,7 +109,8 @@ def bag_of_objects(dataset_detection_video):
                 video_boo_matrix[index][class_id_index-1] = obj_freq
 
           
-        dataset_boo_video.append({'class_id': video['class_id'],
+        dataset_boo_video.append({'video_name':video['video_name'],
+                                  'class_id': video['class_id'],
                                   'frames': video['frames'],
                                   'fps':video['fps'],
                                   'sequence': video_boo_matrix})
@@ -115,6 +130,11 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
     for video in dataset_boo_video:
 
         n_frame = video['frames']
+
+        if n_frame < batch_len:
+            print('-> warning:short video')
+            n_batch = n_frame
+
         n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -125,7 +145,8 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
             frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
             video_batchedboo_matrix[i] = np.sum(frame_batch, axis=0)
 
-        dataset_batchedboo_video.append({'class_id': video['class_id'],
+        dataset_batchedboo_video.append({'video_name':video['video_name'],
+                                  'class_id': video['class_id'],
                                   'frames': video['frames'],
                                   'fps':video['fps'],
                                   'sequence': video_batchedboo_matrix}) 
@@ -145,6 +166,11 @@ def cooccurence(dataset_detection_video, batch_len):
     for video in dataset_boo_video:
 
         n_frame = video['frames']
+
+        if n_frame < batch_len:
+            print('-> warning:short video')
+            n_batch = n_frame
+
         n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -164,12 +190,89 @@ def cooccurence(dataset_detection_video, batch_len):
                     cooc_flat_index+=1
 
 
-        dataset_cooc_video.append({'class_id': video['class_id'],
+        dataset_cooc_video.append({'video_name':video['video_name'],
+                                  'class_id': video['class_id'],
                                   'frames': video['frames'],
                                   'fps':video['fps'],
                                   'sequence': cooc_flat_seq_matrix})#np.where(cooc_flat_seq_matrix>0,1,0)
     return dataset_cooc_video
 
+
+def decode_mask(encoded_list):
+    
+    decoded_mask = np.zeros(encoded_list[0], dtype=bool)
+    encoded_list.pop(0)
+    
+    for element in encoded_list:
+        for i in np.arange(element[3]):
+            decoded_mask[element[0]+i,element[1],element[2]]=True
+    
+    return decoded_mask
+
+
+# intersection of masks @ batch of frame level (presence) 
+def cointersection(dataset_detection_video, batch_len):
+    	
+    print('cointersection')
+
+    dataset_intersection_video = []
+
+    pickle_path = './PersonalCare/pickle'
+
+    for video in dataset_detection_video:
+
+        masks = []
+        print(video['video_name'])
+        curr_pickle = pickle.load(open(pickle_path+'/'+video['video_name'][:-4]+'_trimmed.pickle','rb'))
+        for frame in curr_pickle['segments'][video['seg_id']]['frames_info']:
+            masks.append(frame['obj_masks'])
+		
+        n_frame = video['frames']
+
+        if n_frame < batch_len:
+            print('-> warning:short video')
+            n_batch = n_frame
+        
+        n_batch = batch_len
+
+        interaction_frame_matrix = np.zeros( (n_frame, n_feature , n_feature) , dtype=np.uint8)
+
+        for i in range(n_frame):
+            encoded_masks = masks[i]
+            decoded_mask = decode_mask(encoded_masks)
+
+            n_current_class_ids = len(video['frames_info'][i]['obj_class_ids'])
+
+            for j in range(n_current_class_ids):
+                current_class_id_row = video['frames_info'][i]['obj_class_ids'][j]
+                for k in range(n_current_class_ids):
+                    current_class_id_column = video['frames_info'][i]['obj_class_ids'][k]
+                    if np.sum(decoded_mask[:,:,j] & decoded_mask[:,:,k]) > 0:
+                        interaction_frame_matrix[ i, current_class_id_row-1 , current_class_id_column-1 ] = 1
+
+
+        iteration = int(n_frame/n_batch)
+        interaction_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
+
+        for i in range(iteration):
+            
+            interaction_frame_matrix_batch = np.sum(interaction_frame_matrix[n_batch*i:n_batch*i+n_batch,:,:], axis=0)
+            interaction_tri_upper = np.triu( interaction_frame_matrix_batch, 1)
+
+            intersection_flat_index = 0
+            for j in range(n_feature-1):
+                for k in range((j+1),n_feature):
+                    interaction_flat_seq_matrix[i, intersection_flat_index] = interaction_tri_upper[j,k]
+                    intersection_flat_index+=1
+
+
+        dataset_intersection_video.append({'video_name':video['video_name'],
+                                          'class_id': video['class_id'],
+										  'frames': video['frames'],
+										  'fps':video['fps'],
+										  'sequence': interaction_flat_seq_matrix,#np.where(cooc_flat_seq_matrix>0,1,0)
+										  })
+    return dataset_intersection_video
 
 # speed and velocity of object centroids @ batch of frame level based on object contiguous 
 def kine(dataset_detection_video, batch_len):
@@ -291,6 +394,11 @@ def kine(dataset_detection_video, batch_len):
 
 
         n_frame = video['frames']
+
+        if n_frame < batch_len:
+            print('-> warning:short video')
+            n_batch = n_frame
+        
         n_batch = batch_len
 
         video_batchedspeed_matrix = np.zeros((int(n_frame/n_batch),n_feature))
@@ -316,11 +424,13 @@ def kine(dataset_detection_video, batch_len):
                 video_batchedvelocity_matrix[i][objid] = values[0][1]
 
         
-        dataset_batchedspeed_video.append({'class_id': video['class_id'],
+        dataset_batchedspeed_video.append({'video_name':video['video_name'],
+                                  'class_id': video['class_id'],
                                   'frames': video['frames'],
                                   'fps':video['fps'],
                                   'sequence': video_batchedspeed_matrix})
-        dataset_batchedvelocity_video.append({'class_id': video['class_id'],
+        dataset_batchedvelocity_video.append({'video_name':video['video_name'],
+                                  'class_id': video['class_id'],
                                   'frames': video['frames'],
                                   'fps':video['fps'],
                                   'sequence': video_batchedvelocity_matrix})

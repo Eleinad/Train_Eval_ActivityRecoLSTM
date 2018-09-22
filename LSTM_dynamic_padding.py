@@ -448,7 +448,7 @@ for video in dataset_boo_video:
 		else:
 			end = n_frame
 
-		frame_batch = video['sequence'][int(n_batch//2)*i:end,:]
+		frame_batch = video['sequence'][int(n_batch/pòè/2)*i:end,:]
 		frame_batch = np.where(frame_batch>0,1,0)
 		cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
 
