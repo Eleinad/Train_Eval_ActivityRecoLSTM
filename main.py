@@ -15,7 +15,7 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 dataset_preprocessed = data_preprocessing.boo(dataset_detection_video)
 # #dataset = data_preprocessing.kine([dataset_detection_video[0]], 9)
 
-# splitting train & test
+#splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
 # create the graph
