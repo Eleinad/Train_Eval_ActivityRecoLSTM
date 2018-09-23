@@ -81,12 +81,13 @@ def load_data():
     print()
     print('Activity distribution:')
     pprint(class_statistics)
+    print()
 
     return dataset_detection_video, classlbl_to_classid
 
 
 # bag of objects @ frame level 
-def bag_of_objects(dataset_detection_video):
+def boo(dataset_detection_video):
 
     print('\nbag of objects')
     
@@ -119,9 +120,9 @@ def bag_of_objects(dataset_detection_video):
 
 
 # bag of objects @ batch of frame level
-def batched_bag_of_objects(dataset_detection_video, batch_len):
+def batched_boo(dataset_detection_video, batch_len):
 
-    dataset_boo_video = bag_of_objects(dataset_detection_video)
+    dataset_boo_video = boo(dataset_detection_video)
 
     print('batched bag of objects')
 
@@ -132,10 +133,10 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
         n_frame = video['frames']
 
         if n_frame < batch_len:
-            print('-> warning:short video')
+            print('-> warning:short batch')
             n_batch = n_frame
-
-        n_batch = batch_len
+        else:
+            n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -143,7 +144,7 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
 
         for i in range(iteration):
             frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
-            video_batchedboo_matrix[i] = np.sum(frame_batch, axis=0)
+            video_batchedboo_matrix[i] = np.sum(frame_batch, axis=0)/n_batch
 
         dataset_batchedboo_video.append({'video_name':video['video_name'],
                                   'class_id': video['class_id'],
@@ -155,9 +156,9 @@ def batched_bag_of_objects(dataset_detection_video, batch_len):
 
 
 # cooccurence of objects @ batch of frame level (presence) 
-def cooccurence(dataset_detection_video, batch_len):
+def cooccurrence(dataset_detection_video, batch_len):
     
-    dataset_boo_video = bag_of_objects(dataset_detection_video)
+    dataset_boo_video = boo(dataset_detection_video)
 
     print('cooccurence')
 
@@ -168,10 +169,10 @@ def cooccurence(dataset_detection_video, batch_len):
         n_frame = video['frames']
 
         if n_frame < batch_len:
-            print('-> warning:short video')
+            print('-> warning:short batch')
             n_batch = n_frame
-
-        n_batch = batch_len
+        else:
+            n_batch = batch_len
 
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
@@ -212,17 +213,19 @@ def decode_mask(encoded_list):
 
 # intersection of masks @ batch of frame level (presence) 
 def cointersection(dataset_detection_video, batch_len):
-    	
+    
     print('cointersection')
 
     dataset_intersection_video = []
 
     pickle_path = './PersonalCare/pickle'
 
-    for video in dataset_detection_video:
+    n_video = len(dataset_detection_video)
+
+    for index,video in enumerate(dataset_detection_video):
 
         masks = []
-        print(video['video_name'])
+        print("%d/%d - %s" % (index+1,n_video,video['video_name']))
         curr_pickle = pickle.load(open(pickle_path+'/'+video['video_name'][:-4]+'_trimmed.pickle','rb'))
         for frame in curr_pickle['segments'][video['seg_id']]['frames_info']:
             masks.append(frame['obj_masks'])
@@ -230,10 +233,10 @@ def cointersection(dataset_detection_video, batch_len):
         n_frame = video['frames']
 
         if n_frame < batch_len:
-            print('-> warning:short video')
+            print('-> warning:short batch')
             n_batch = n_frame
-        
-        n_batch = batch_len
+        else:
+            n_batch = batch_len
 
         interaction_frame_matrix = np.zeros( (n_frame, n_feature , n_feature) , dtype=np.uint8)
 
@@ -247,8 +250,9 @@ def cointersection(dataset_detection_video, batch_len):
                 current_class_id_row = video['frames_info'][i]['obj_class_ids'][j]
                 for k in range(n_current_class_ids):
                     current_class_id_column = video['frames_info'][i]['obj_class_ids'][k]
-                    if np.sum(decoded_mask[:,:,j] & decoded_mask[:,:,k]) > 0:
-                        interaction_frame_matrix[ i, current_class_id_row-1 , current_class_id_column-1 ] = 1
+                    if j!=k:
+                        if np.sum(np.logical_and(decoded_mask[:,:,j],decoded_mask[:,:,k])) > 0:
+                            interaction_frame_matrix[ i, current_class_id_row-1 , current_class_id_column-1 ] = 1
 
 
         iteration = int(n_frame/n_batch)
@@ -298,21 +302,52 @@ def kine(dataset_detection_video, batch_len):
 
         # costruzione della struttura dati contenente i centroidi degli oggetti nei frame
         centroids_list = []
-        for frame in video['frames_info']:
+
+        # for frame in video['frames_info']:
+        #     centroids_list.append([[] for _ in range(33)])
+        #     objs = frame['obj_class_ids']
+        #     rois = frame['obj_rois']
+        #     for i in range(objs.shape[0]):
+        #         curr_obj_roi = rois[i]
+        #         curr_obj_id = objs[i]-1
+        #         (x, y) = centroid_roi(curr_obj_roi)
+        #         centroids_list[-1][curr_obj_id].append((int(x),int(y))
+
+        n_frames = video['frames']
+        start_frame_index = video['frames_info'][0]['original_index']
+        
+        i,k=0,0
+        curr_frame_index = start_frame_index
+        while curr_frame_index<start_frame_index+n_frames:
             centroids_list.append([[] for _ in range(33)])
-            objs = frame['obj_class_ids']
-            rois = frame['obj_rois']
-            for i in range(objs.shape[0]):
-                curr_obj_roi = rois[i]
-                curr_obj_id = objs[i]-1
-                (x, y) = centroid_roi(curr_obj_roi)
-                centroids_list[-1][curr_obj_id].append((int(x),int(y)))
+            #centroids_list_mask.append([[] for _ in range(33)])
+            if video['frames_info'][i]['original_index'] == curr_frame_index:
+                objs = video['frames_info'][i]['obj_class_ids']
+                #masks = decode_mask(a['segments'][0]['frames_info'][i]['obj_masks'])
+                rois = video['frames_info'][i]['obj_rois']
+                for j in range(objs.shape[0]):
+                    #curr_obj_mask = Image.fromarray(masks[:,:,j].astype(np.uint8)*255)
+                    #curr_obj_mask = masks[:,:,j]
+                    curr_obj_roi = rois[j]
+                    curr_obj_id = objs[j]-1
+                    (x_roi, y_roi) = centroid_roi(curr_obj_roi)
+                    #(x_mask, y_mask) = centroid_mask(curr_obj_mask)
+                    centroids_list[k][curr_obj_id].append((int(x_roi),int(y_roi)))
+                    #centroids_list_mask[k][curr_obj_id].append((int(x_mask),int(y_mask)))
+                    
+                    #pdraw = ImageDraw.Draw(curr_obj_mask)
+                    #pdraw.point([centroid_mask(curr_obj_mask)], fill=125)
+                    #curr_obj_mask.show()
+                i+=1
+            curr_frame_index+=1
+            k+=1
+
 
 
 
         # encoding di centroids_list in una binary matrix
         # da usare dopo per ottenere objid_to_contiguous_intervals
-        n = video['final_nframes']
+        n = video['frames']
 
         all_objs = set({})
         for i in range(n):
@@ -329,8 +364,8 @@ def kine(dataset_detection_video, batch_len):
                     binary_sequence[index,i-1] = 1
 
 
-        img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
-        img.show()
+        #img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
+        #img.show()
 
 
         # costruzione di objid_to_contiguous_intervals
@@ -396,10 +431,10 @@ def kine(dataset_detection_video, batch_len):
         n_frame = video['frames']
 
         if n_frame < batch_len:
-            print('-> warning:short video')
+            print('-> warning:short batch')
             n_batch = n_frame
-        
-        n_batch = batch_len
+        else:
+            n_batch = batch_len
 
         video_batchedspeed_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 

@@ -31,6 +31,7 @@ def graph(splitted_data):
 
 	#=========================graph===========================
 	#tf.set_random_seed(1234)
+	tf.reset_default_graph()
 
 	batch_size = tf.placeholder(tf.int32, shape=[], name='batch_size')
 
