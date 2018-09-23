@@ -24,6 +24,7 @@ def load_data():
     for video_pickle in os.listdir(pickle_path):
         if 'trimmed' in video_pickle:
             pic = pickle.load(open(pickle_path+'/'+video_pickle,'rb'))
+            print(pic['video_name'])
             for curr_seg,seg in pic['segments'].items():
                 nomask_frame_info = []
                 for frame in seg['frames_info']:
