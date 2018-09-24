@@ -14,7 +14,7 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.cooccurence(dataset_detection_video, 9)
+dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, 9)
 
 '''
 dataset_preprocessed.sort(key=lambda x: x['class_id'])
