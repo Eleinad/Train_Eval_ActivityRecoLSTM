@@ -4,6 +4,7 @@ import datetime
 from sklearn.metrics import confusion_matrix, classification_report
 import pickle
 import numpy as np
+import os
 
 
 
@@ -11,7 +12,7 @@ learning_rate=0.0005
 
 
 
-def graph(splitted_data):
+def graph(splitted_data, lstm_in_cell_units=5, relu_units=5):
 
 	X_train = splitted_data[0]
 	X_test = splitted_data[1]
@@ -21,7 +22,8 @@ def graph(splitted_data):
 	seq_len_test = splitted_data[5]
 
 
-	lstm_in_cell_units=20 # design choice (hyperparameter)
+	lstm_in_cell_units=lstm_in_cell_units # design choice (hyperparameter)
+	relu_units=relu_units
 	train_fakebatch_size = len(X_train)
 	test_fakebatch_size = len(X_test)
 
@@ -80,6 +82,7 @@ def graph(splitted_data):
 	initial_state = lstm_cell.zero_state(batch_size, tf.float32)
 	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
+	relu = tf.layers.dense(inputs=states[1], units=relu_units, activation=tf.nn.relu, name='relu')
 
 	# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
 	#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
@@ -87,7 +90,7 @@ def graph(splitted_data):
 	# logits
 	#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
 	#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
-	logits = tf.layers.dense(states[1], units=len(y_train[0]), name='logits')
+	logits = tf.layers.dense(relu, units=len(y_train[0]), name='logits')
 
 	# loss
 	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch), name='loss')
@@ -135,18 +138,21 @@ def graph(splitted_data):
 	for op in inference_op_list:
 		tf.get_default_graph().add_to_collection('my_inference_op',op)
 
-	hyperparameters = []
+	hyperparameters = [lstm_in_cell_units, relu_units]
+	for hyp in hyperparameters:
+		tf.get_default_graph().add_to_collection('hyperparameters', hyp)
 
 	# exporting graph
-	tf.train.export_meta_graph(filename='./tmp/graph.meta')
+	tf.train.export_meta_graph(filename='./graph/graph.meta')
 
 
 
-def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
+def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_type):
 
 	graph=tf.get_default_graph()
+
+	#fetching graph training op from the collection
 	train_op_list = graph.get_collection('my_train_op')
-	
 	init = train_op_list[0]
 	batch_size = train_op_list[1]
 	train_iterator_init = train_op_list[2]
@@ -162,12 +168,18 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 	saver = tf.train.Saver(max_to_keep=3)
 
 
+	#fetching graph hyperparameters from the collection
+	hyperparameters = graph.get_collection('hyperparameters')
+	lstm_in_cell_units = hyperparameters[0]
+	relu_units = hyperparameters[1]
 
 	losses = {
 		  'train_loss':[],
 		  'train_acc':[],
 		  'test_loss':[],
-		  'test_acc':[]
+		  'test_acc':[],
+		  'top_3_acc':[],
+		  'top_5_acc':[]
 		  }
 
 	X_train = splitted_data[0]
@@ -183,7 +195,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 	with tf.Session() as sess:
 		
 		sess.run(init)	
-		writer = tf.summary.FileWriter("variable_histograms")
+		writer = tf.summary.FileWriter("events_W_histograms")
 		
 
 		#***************** TRAINING ********************
@@ -212,7 +224,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 			epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
 			print('Tot epoch time: %s' % (epoch_time))
 
-			save_path = saver.save(sess, "./tmp/model.ckpt", global_step=i, write_meta_graph=False)
+			save_path = saver.save(sess, "./weights/model.ckpt", global_step=i, write_meta_graph=False)
 
 
 			#****************** VALIDATION (after each epoch) ******************
@@ -227,15 +239,36 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 			# whole test set
 			sess.run(faketest_iterator_init, 
 					 feed_dict={batch_size:faketest_batch_size})
-			test_loss, test_acc = sess.run((loss, accuracy),
+			test_loss, test_acc, logits_, y_true_ = sess.run((loss, accuracy, logits, y_true),
 											feed_dict={batch_size:faketest_batch_size})
 			print('Test_loss: %f' % test_loss)
 			print('Test_acc: %f' % test_acc)
+
+			# TOP-3 and TOP-5
+			ordered_logits = []
+
+			for i in logits_:
+				temp = []
+				for index,j in enumerate(i):
+					temp.append((index,j))
+				temp.sort(key=lambda x:x[1], reverse=True)
+				ordered_logits.append(temp)
+
+
+			top_3 = [1 if k in [j[0][1] for j in ordered_logits[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_3_acc = sum(top_3)/len(top_3)
+			top_5 = [1 if k in [j[0][1] for j in ordered_logits[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_5_acc = sum(top_5)/len(top_5)
+
+			print('Top_3_acc: %f' % top_3_acc)
+			print('Top_5_acc: %f' % top_5_acc)
 
 			losses['train_loss'].append(train_loss)
 			losses['train_acc'].append(train_acc)
 			losses['test_loss'].append(test_loss)
 			losses['test_acc'].append(test_acc)
+			losses['top_3_acc'].append(top_3_acc)
+			losses['top_5_acc'].append(top_5_acc)
 
 
 		#************* CONFUSION MATRIX *************
@@ -247,19 +280,20 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size):
 			print(sess.run(i)[0])
 
 
-
-
 		print()
 		print(classlbl_to_classid)
 		print()
-		print(confusion_matrix(test_y_true, test_y_pred))
+		print(confusion_matrix(test_y_true, test_y_pred, labels=[0,1,2,3,4,5,6]))
 		print()
-		print(classification_report(test_y_true, test_y_pred))
+		print(classification_report(test_y_true, test_y_pred, labels=[0,1,2,3,4,5,6]))
 		#print()
 		#misclassified_nframe = [seq_len[i[0]]*n_batch for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
 		#print(misclassified_nframe)
 
-		pickle.dump(losses, open('losses.pickle','wb'))
+		loss_dir = './loss'
+		if not os.path.exists(loss_dir):
+			os.makedirs(loss_dir)
+		pickle.dump(losses, open(loss_dir+'/'+'losses_'+feat_type+'_'+str(lstm_in_cell_units)+'_'+str(relu_units)+'.pickle','wb'))
 
 
 
