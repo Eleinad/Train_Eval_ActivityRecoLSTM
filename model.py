@@ -255,9 +255,9 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 				ordered_logits.append(temp)
 
 
-			top_3 = [1 if k in [j[0][0] for j in i[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_3 = [1 if k in [j[0] for j in i[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_3_acc = sum(top_3)/len(top_3)
-			top_5 = [1 if k in [j[0][0] for j in i[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_5 = [1 if k in [j[0] for j in i[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_5_acc = sum(top_5)/len(top_5)
 
 			print('Top_3_acc: %f' % top_3_acc)
