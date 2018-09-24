@@ -37,7 +37,7 @@ def load_data():
                 dataset_detection_video.append(mod_pic)
 
 
-    dataset_detection_video = [video for video in dataset_detection_video if video['frames']//video['fps'] >= 5] #at least 5 sec
+    dataset_detection_video = [video for video in dataset_detection_video if int(video['frames']/video['fps']) >= 5] #at least 5 sec
 
     classlbl_to_classid = {}
     classid = 0
