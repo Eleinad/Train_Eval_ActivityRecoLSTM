@@ -14,9 +14,9 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.boo(dataset_detection_video)
+dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 9)
 
-
+'''
 dataset_preprocessed.sort(key=lambda x: x['class_id'])
 sequences = dataset_preprocessed[0]['sequence']
 for i in range(1,len(dataset_preprocessed)):
@@ -57,28 +57,28 @@ img_array = np.asarray(img)
 image_pil = Image.fromarray(img_array.astype('uint8'), 'RGB')
 
 image_pil.show()
+'''
 
 
+#splitting train & test
+splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
-# #splitting train & test
-# splitted_data = data_preprocessing.split_data(dataset_preprocessed)
+lstm = [4,8,16]
+relu = [4,8,16]
 
-# lstm = [4,8,16]
-# relu = [4,8,16]
+for i in lstm:
+	for j in relu:
 
-# for i in lstm:
-# 	for j in relu:
+		# # create the graph
+		model.graph(splitted_data,i,j)
 
-# 		# # create the graph
-# 		model.graph(splitted_data,i,j)
+		# #ops = [op.name for op in tf.get_default_graph().get_operations()]
+		# #tensors = [op.values() for op in tf.get_default_graph().get_operations()]
+		# #print(ops)
+		# #print(tf.get_default_graph().collections)
 
-# 		# #ops = [op.name for op in tf.get_default_graph().get_operations()]
-# 		# #tensors = [op.values() for op in tf.get_default_graph().get_operations()]
-# 		# #print(ops)
-# 		# #print(tf.get_default_graph().collections)
-
-# 		# # train & save 
-# 		model.train(splitted_data, classlbl_to_classid, 100, 32, feat_type)
+		# # train & save 
+		model.train(splitted_data, classlbl_to_classid, 100, 32, feat_type)
 		
-# 		# # # restore & inference
-# 		# # #model.predict(splitted_data[1], splitted_data[3], splitted_data[5])
+		# # # restore & inference
+		# # #model.predict(splitted_data[1], splitted_data[3], splitted_data[5])
