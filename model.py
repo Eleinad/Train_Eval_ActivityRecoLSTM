@@ -82,7 +82,7 @@ def graph(splitted_data, lstm_in_cell_units=5, relu_units=5):
 	initial_state = lstm_cell.zero_state(batch_size, tf.float32)
 	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
-	relu = tf.layers.dense(inputs=states[1], units=relu_units, activation=tf.nn.relu, name='relu')
+	#relu = tf.layers.dense(inputs=states[1], units=relu_units, activation=tf.nn.relu, name='relu')
 
 	# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
 	#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
@@ -90,7 +90,7 @@ def graph(splitted_data, lstm_in_cell_units=5, relu_units=5):
 	# logits
 	#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
 	#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
-	logits = tf.layers.dense(relu, units=len(y_train[0]), name='logits')
+	logits = tf.layers.dense(states[1], units=len(y_train[0]), name='logits')
 
 	# loss
 	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch), name='loss')
@@ -255,9 +255,9 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 				ordered_logits.append(temp)
 
 
-			top_3 = [1 if k in [j[0][0] for j in ordered_logits[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_3 = [1 if k in [j[0][0] for j in i[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_3_acc = sum(top_3)/len(top_3)
-			top_5 = [1 if k in [j[0][0] for j in ordered_logits[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
+			top_5 = [1 if k in [j[0][0] for j in i[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_5_acc = sum(top_5)/len(top_5)
 
 			print('Top_3_acc: %f' % top_3_acc)
