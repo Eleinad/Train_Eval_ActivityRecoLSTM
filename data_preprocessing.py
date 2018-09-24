@@ -40,6 +40,16 @@ def load_data():
     dataset_detection_video = [video for video in dataset_detection_video if video['frames'] > 0 or video['fps'] > 0]
     dataset_detection_video = [video for video in dataset_detection_video if int(video['frames']/video['fps']) >= 5] #at least 5 sec
 
+    for video in dataset_detection_video:
+        if video['fps'] >= 29:
+            new_frames = []
+            for i in range(0,len(video['frames_info']),2):
+                new_frames.append(video['frames_info'][i])
+
+            video['frames_info'] = new_frames
+            video['frames'] = len(new_frames)
+
+
     classlbl_to_classid = {}
     classid = 0
 
@@ -78,6 +88,8 @@ def load_data():
     print('Activity distribution:')
     pprint(class_statistics)
     print()
+
+
 
     return dataset_detection_video, classlbl_to_classid
 
@@ -124,7 +136,7 @@ def batched_boo(dataset_detection_video, batch_len):
 
     dataset_batchedboo_video = []
 
-    for video in dataset_boo_video:
+    for video in dataset_boo_video[0]:
 
         n_frame = video['frames']
 
@@ -160,7 +172,7 @@ def cooccurrence(dataset_detection_video, batch_len):
 
     dataset_cooc_video = []
 
-    for video in dataset_boo_video:
+    for video in dataset_boo_video[0]:
 
         n_frame = video['frames']
 

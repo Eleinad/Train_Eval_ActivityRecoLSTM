@@ -257,6 +257,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 
 			top_3 = [1 if k in [j[0][1] for j in ordered_logits[:3]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_3_acc = sum(top_3)/len(top_3)
+			print(top_3_acc)
 			top_5 = [1 if k in [j[0][1] for j in ordered_logits[:5]] else 0 for i,k in zip(ordered_logits,y_true_)]
 			top_5_acc = sum(top_5)/len(top_5)
 
