@@ -8,14 +8,8 @@ import numpy as np
 # data loading (pickle)
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
-
-
-frame_len = [int(i['frames']) for i in dataset_detection_video]
-
 #features
 dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 15)
-
-
 
 '''
 sequences = dataset_preprocessed[0]['sequence']
@@ -59,7 +53,6 @@ image_pil = Image.fromarray(img_array.astype('uint8'), 'RGB')
 image_pil.show()
 '''
 
-
 #splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
@@ -69,16 +62,11 @@ relu = [0]
 for i in lstm:
 	for j in relu:
 
-		# # create the graph
+		# create the graph
 		model.graph(splitted_data,i,j)
 
-		# #ops = [op.name for op in tf.get_default_graph().get_operations()]
-		# #tensors = [op.values() for op in tf.get_default_graph().get_operations()]
-		# #print(ops)
-		# #print(tf.get_default_graph().collections)
-
-		# # train & save 
+		# train & save 
 		model.train(splitted_data, classlbl_to_classid, 10, 32, feat_type)
 		
-		# # # restore & inference
+		# restore & inference
 		model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
