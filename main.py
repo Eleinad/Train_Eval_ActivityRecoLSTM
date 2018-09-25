@@ -13,7 +13,7 @@ dataset_detection_video.sort(key=lambda x: x['class_id'])
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 9)
+dataset_preprocessed, feat_type = data_preprocessing.cointersection(dataset_detection_video, 30)
 
 
 
