@@ -165,7 +165,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 	y_true = train_op_list[9]
 	y_pred = train_op_list[10]
 	accuracy = train_op_list[11]
-	saver = tf.train.Saver(max_to_keep=3)
+	saver = tf.train.Saver(var_list=graph.get_collection('trainable_variables'), max_to_keep=3)
 
 
 	#fetching graph hyperparameters from the collection
@@ -224,7 +224,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 			epoch_time = str(datetime.timedelta(seconds=round(time.time()-start_epoch_time, 2)))
 			print('Tot epoch time: %s' % (epoch_time))
 
-			save_path = saver.save(sess, "./weights/model.ckpt", global_step=i, write_meta_graph=False)
+			save_path = saver.save(sess,"./weights/model.ckpt", global_step=i, write_meta_graph=False)
 
 
 			#****************** VALIDATION (after each epoch) ******************
@@ -276,8 +276,6 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 				 feed_dict={batch_size:faketest_batch_size})
 		test_y_true, test_y_pred = sess.run((y_true, y_pred),feed_dict={batch_size:faketest_batch_size})
 
-		for i in tf.get_default_graph().get_collection('trainable_variables'):
-			print(sess.run(i)[0])
 
 
 		print()
@@ -286,9 +284,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 		print(confusion_matrix(test_y_true, test_y_pred, labels=[0,1,2,3,4,5,6]))
 		print()
 		print(classification_report(test_y_true, test_y_pred, labels=[0,1,2,3,4,5,6]))
-		#print()
-		#misclassified_nframe = [seq_len[i[0]]*n_batch for i in np.argwhere(np.equal(test_y_true,test_y_pred)==False)]
-		#print(misclassified_nframe)
+
 
 		loss_dir = './loss'
 		if not os.path.exists(loss_dir):
@@ -301,20 +297,14 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 
 
 
-def predict(X, y, seq):
+def predict(X, y, seq, classlbl_to_classid):
 
 	fakeinference_batch_size = len(X)
 	zipped_inference_data = list(zip(X,y,seq))
 
-	tf.reset_default_graph()
-	tf.train.import_meta_graph('./tmp/graph.meta')
-	#print(tf.get_default_graph().collections)
-	#print(tf.get_default_graph().get_collection('trainable_variables'))
-	pretrained_weights = tf.get_default_graph().get_collection('trainable_variables')
-	print(pretrained_weights)
-	tf.reset_default_graph()
 
-
+	tf.reset_default_graph()
+	
 	inference_data = tf.data.Dataset.from_generator(lambda: zipped_inference_data, (tf.int32, tf.int32, tf.int32))
 
 	shape = ([None,len(X[0][0])],[len(y[0])],[])
@@ -346,52 +336,17 @@ def predict(X, y, seq):
 	correct_pred = tf.equal(y_pred, y_true)
 	accuracy = tf.reduce_mean(tf.cast(correct_pred, dtype=tf.float32), name='accuracy')
 
-	graph=tf.get_default_graph()
-	#print(tf.get_default_graph().collections)
-	#print(tf.get_default_graph().get_collection('trainable_variables'))
-	
+	trainable_vrbls = tf.get_default_graph().get_collection('trainable_variables')
 
-	# restoring pretrained weights
-	# restore_w_ops = []
-	# for i,j in zip(graph.get_collection('trainable_variables'),pretrained_weights):
-	# 	scope = i.name[0:i.name.rfind('/')]
-	# 	print(scope, i.name[i.name.rfind('/')+1:i.name.find(':')])
-	# 	with tf.variable_scope(scope, reuse=True):
-	# 		restore_w_ops.append(tf.get_variable(i.name[i.name.rfind('/')+1:i.name.find(':')],  
-	# 							 initializer=j))
-
-
-	with tf.variable_scope('rnn/basic_lstm_cell', reuse=True):
-		a = tf.get_variable('kernel',  initializer=np.ones((53,80)))
-
-	# with tf.variable_scope('prova'):
-	# 	b = tf.get_variable('kernel',  initializer=pretrained_weights[0].initialized_value())
-
-	# with tf.variable_scope('prova'):
-	# 	a = tf.Variable(pretrained_weights[0], name='kernel')
-
+	saver = tf.train.Saver(trainable_vrbls)
 
 
 	with tf.Session() as sess:
-		# a = sess.run(tf.report_uninitialized_variables())
-		# print(a)
-		# # saver.restore(sess, tf.train.latest_checkpoint('./tmp'))
-		# for i,j in zip(graph.get_collection('trainable_variables'),pretrained_trainable_variables):
-		# 	value = sess.run(i)
-		# 	i.load(value, sess)
-		#sess.run(init)
-		from pprint import pprint
-		pprint(tf.get_default_graph().get_collection('variables'))
-		sess.run(a.initializer)
-		print(sess.run(tf.report_uninitialized_variables()))
-		for i in tf.get_default_graph().get_collection('variables'):
-			if 'kernel' in i.name and ('rnn' in i.name or 'prova' in i.name):
-				print(i.name)
-				print(sess.run(i)[0])
-		#for op in restore_w_ops:
-		
-		b = sess.run(tf.report_uninitialized_variables())
-		print(b)
-		#test_y_true, test_y_pred, accuracy = sess.run((y_true, y_pred, accuracy))
+		saver.restore(sess, tf.train.latest_checkpoint('./weights'))
 
-	#print(test_y_true, test_y_pred, accuracy) 
+		test_y_true, test_y_pred, accuracy = sess.run((y_true, y_pred, accuracy))
+
+
+	classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
+
+	print(test_y_true, test_y_pred, accuracy) 

@@ -89,7 +89,7 @@ def load_data():
     pprint(class_statistics)
     print()
 
-
+    dataset_detection_video.sort(key=lambda x: x['class_id'])
 
     return dataset_detection_video, classlbl_to_classid
 

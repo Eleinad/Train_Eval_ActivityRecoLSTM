@@ -8,12 +8,12 @@ import numpy as np
 # data loading (pickle)
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
-dataset_detection_video.sort(key=lambda x: x['class_id'])
+
 
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.cointersection(dataset_detection_video, 30)
+dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 15)
 
 
 
@@ -63,8 +63,8 @@ image_pil.show()
 #splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
-lstm = [4,8,16,32]
-relu = [4,8,16,32]
+lstm = [20]
+relu = [0]
 
 for i in lstm:
 	for j in relu:
@@ -78,7 +78,7 @@ for i in lstm:
 		# #print(tf.get_default_graph().collections)
 
 		# # train & save 
-		model.train(splitted_data, classlbl_to_classid, 80, 32, feat_type)
+		model.train(splitted_data, classlbl_to_classid, 10, 32, feat_type)
 		
 		# # # restore & inference
-		# # #model.predict(splitted_data[1], splitted_data[3], splitted_data[5])
+		model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
