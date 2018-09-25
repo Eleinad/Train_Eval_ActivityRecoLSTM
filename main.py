@@ -13,7 +13,7 @@ dataset_detection_video.sort(key=lambda x: x['class_id'])
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.cointersection(dataset_detection_video, 9)
+dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 9)
 
 
 
@@ -63,7 +63,7 @@ image_pil.show()
 #splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
-lstm = [8,16,32]
+lstm = [4,8,16,32]
 relu = [4,8,16,32]
 
 for i in lstm:
