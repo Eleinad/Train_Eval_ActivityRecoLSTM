@@ -8,12 +8,14 @@ import numpy as np
 # data loading (pickle)
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
+dataset_detection_video.sort(key=lambda x: x['class_id'])
+
 frame_len = [int(i['frames']) for i in dataset_detection_video]
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, 9)
+dataset_preprocessed, feat_type = data_preprocessing.cointersection(dataset_detection_video, 9)
 
-dataset_preprocessed.sort(key=lambda x: x['class_id'])
+
 
 '''
 sequences = dataset_preprocessed[0]['sequence']
@@ -62,7 +64,7 @@ image_pil.show()
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
 lstm = [4,8,16,32]
-relu = [0]
+relu = [4,8,16,32]
 
 for i in lstm:
 	for j in relu:
