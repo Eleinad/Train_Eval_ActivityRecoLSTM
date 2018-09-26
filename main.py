@@ -51,8 +51,7 @@ image_pil = Image.fromarray(img_array.astype('uint8'), 'RGB')
 image_pil.show()
 '''
 
-#splitting train & test
-splitted_data = data_preprocessing.split_data(dataset_preprocessed)
+
 
 frame_batch = [9,15,30]
 lstm = [4,8,16,32]
@@ -65,6 +64,9 @@ for i in lstm:
 			print(str(i)+'-'+str(j)+'-'+str(frame_batch))
 			#features
 			dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
+
+			#splitting train & test
+			splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
 			# create the graph
 			model.graph(splitted_data,i,j)
