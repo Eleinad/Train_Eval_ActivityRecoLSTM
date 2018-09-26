@@ -8,6 +8,17 @@ import numpy as np
 # data loading (pickle)
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
+# import matplotlib.pyplot as plt
+# classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
+# classes = [i['class_id'] for i in dataset_detection_video]
+# labels, counts = np.unique(classes, return_counts=True)
+# plt.bar(labels, counts, align='center', tick_label=[classid_to_classlbl[i] if 'lenses' not in classid_to_classlbl[i] else 'putcontactlenses' for i in range(7)])
+# plt.gca().set_xticks(labels)
+# plt.xlabel('Activity')
+# plt.ylabel('Frequency')
+# plt.show()
+
+
 
 '''
 sequences = dataset_preprocessed[0]['sequence']
@@ -63,10 +74,10 @@ for i in lstm:
 
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
-			dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
+			dataset_preprocessed, feat_type = data_preprocessing.kine(dataset_detection_video, k)
 
 			#splitting train & test
-			splitted_data = data_preprocessing.split_data(dataset_preprocessed)
+			splitted_data = data_preprocessing.split_data(dataset_preprocessed[0])
 
 			# create the graph
 			model.graph(splitted_data,i,j)
@@ -76,3 +87,4 @@ for i in lstm:
 			
 			# restore & inference
 			#model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
+
