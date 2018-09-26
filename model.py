@@ -82,15 +82,28 @@ def graph(splitted_data, lstm_in_cell_units=5, relu_units=5):
 	initial_state = lstm_cell.zero_state(batch_size, tf.float32)
 	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
-	#relu = tf.layers.dense(inputs=states[1], units=relu_units, activation=tf.nn.relu, name='relu')
 
-	# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
-	#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
 
-	# logits
-	#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
-	#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
-	logits = tf.layers.dense(states[1], units=len(y_train[0]), name='logits')
+	if relu_units != 0:
+		relu = tf.layers.dense(inputs=states[1], units=relu_units, activation=tf.nn.relu, name='relu')
+
+		# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
+		#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
+
+		# logits
+		#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
+		#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
+		logits = tf.layers.dense(relu, units=len(y_train[0]), name='logits')
+	else:
+
+		# last_step_output done right (each instance will have it's own seq_len therefore the right last ouptut for each instance must be taken)
+		#last_step_output = tf.gather_nd(outputs, tf.stack([tf.range(tf.shape(current_X_batch)[0]), current_seq_len_batch-1], axis=1))
+
+		# logits
+		#hidden_state = output per cui last_step_output è superfluo, grazie a current_seq_len_batch ritorna l'hidden_state del giusto timestep
+		#states è una tupla (cell_state, hidden_state) dell'ultimo timestep (in base a current_seq_len_batch)
+		logits = tf.layers.dense(states[1], units=len(y_train[0]), name='logits')
+
 
 	# loss
 	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=current_y_batch), name='loss')
@@ -147,7 +160,7 @@ def graph(splitted_data, lstm_in_cell_units=5, relu_units=5):
 
 
 
-def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_type):
+def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_type, frame_batch):
 
 	graph=tf.get_default_graph()
 
@@ -289,7 +302,7 @@ def train(splitted_data, classlbl_to_classid, n_epoch, train_batch_size, feat_ty
 		loss_dir = './loss'
 		if not os.path.exists(loss_dir):
 			os.makedirs(loss_dir)
-		pickle.dump(losses, open(loss_dir+'/'+'losses_'+feat_type+'_'+str(lstm_in_cell_units)+'_'+str(relu_units)+'.pickle','wb'))
+		pickle.dump(losses, open(loss_dir+'/'+'losses_'+feat_type+'_'+str(lstm_in_cell_units)+'_'+str(relu_units)+'_'+str(frame_batch)+'.pickle','wb'))
 
 
 

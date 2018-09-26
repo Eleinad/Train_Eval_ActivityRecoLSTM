@@ -8,8 +8,6 @@ import numpy as np
 # data loading (pickle)
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
-#features
-dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, 30)
 
 '''
 sequences = dataset_preprocessed[0]['sequence']
@@ -56,17 +54,23 @@ image_pil.show()
 #splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
+frame_batch = [9,15,30]
 lstm = [4,8,16,32]
-relu = [4,8,16,32]
+relu = [0,4,8,16,32]
 
 for i in lstm:
 	for j in relu:
+		for k in frame_batch:
 
-		# create the graph
-		model.graph(splitted_data,i,j)
+			print(str(i)+'-'+str(j)+'-'+str(frame_batch))
+			#features
+			dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
 
-		# train & save 
-		model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type)
-		
-		# restore & inference
-		#model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
+			# create the graph
+			model.graph(splitted_data,i,j)
+
+			# train & save 
+			model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type)
+			
+			# restore & inference
+			#model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
