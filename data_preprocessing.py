@@ -185,16 +185,16 @@ def cooccurrence(dataset_detection_video, batch_len):
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
         iteration = int(n_frame/n_batch)
-        cooc_flat_seq_matrix = np.zeros((iteration, (n_feature-1)*(n_feature+1-1)//2), dtype=np.uint8)
+        cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
 
         for i in range(iteration):
             frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
             frame_batch = np.where(frame_batch>0,1,0)
-            cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 1)
+            cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 0)
 
             cooc_flat_index = 0
-            for j in range(n_feature-1):
-                for k in range((j+1),n_feature):
+            for j in range(n_feature):
+                for k in range(j,n_feature):
                     cooc_flat_seq_matrix[i, cooc_flat_index] = cooc_tri_upper[j,k]
                     cooc_flat_index+=1
 

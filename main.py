@@ -9,7 +9,7 @@ import numpy as np
 dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 
 #features
-dataset_preprocessed, feat_type = data_preprocessing.batched_boo(dataset_detection_video, 15)
+dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, 30)
 
 '''
 sequences = dataset_preprocessed[0]['sequence']
@@ -56,8 +56,8 @@ image_pil.show()
 #splitting train & test
 splitted_data = data_preprocessing.split_data(dataset_preprocessed)
 
-lstm = [20]
-relu = [0]
+lstm = [4,8,16,32]
+relu = [4,8,16,32]
 
 for i in lstm:
 	for j in relu:
@@ -66,7 +66,7 @@ for i in lstm:
 		model.graph(splitted_data,i,j)
 
 		# train & save 
-		model.train(splitted_data, classlbl_to_classid, 10, 32, feat_type)
+		model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type)
 		
 		# restore & inference
-		model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
+		#model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
