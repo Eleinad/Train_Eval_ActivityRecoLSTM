@@ -61,7 +61,7 @@ for i in lstm:
 	for j in relu:
 		for k in frame_batch:
 
-			print(str(i)+'-'+str(j)+'-'+str(frame_batch))
+			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
 			dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
 
@@ -72,7 +72,7 @@ for i in lstm:
 			model.graph(splitted_data,i,j)
 
 			# train & save 
-			model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type)
+			model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type, k)
 			
 			# restore & inference
 			#model.predict(splitted_data[1], splitted_data[3], splitted_data[5], classlbl_to_classid)
