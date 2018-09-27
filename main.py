@@ -67,7 +67,7 @@ image_pil.show()
 '''
 
 
-frame_batch = [15,30]
+frame_batch = [30]
 lstm = [8,16,32]
 relu = [8,16,32]
 
