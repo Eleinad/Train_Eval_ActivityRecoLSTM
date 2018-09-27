@@ -18,6 +18,9 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 # plt.ylabel('Frequency')
 # plt.show()
 
+frame_len = [i['frames'] for i in dataset_detection_video]
+frame_len.sort()
+
 
 
 '''
@@ -63,10 +66,9 @@ image_pil.show()
 '''
 
 
-
-frame_batch = [9,15,30]
-lstm = [4,8,16,32]
-relu = [0,4,8,16,32]
+frame_batch = [15]
+lstm = [16]
+relu = [0]
 
 for i in lstm:
 	for j in relu:
@@ -74,7 +76,7 @@ for i in lstm:
 
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
-			speed, velocity, feat_type = data_preprocessing.kine(dataset_detection_video, k)
+			speed, velocity, feat_type = data_preprocessing.kine([dataset_detection_video[1]], k)
 
 			#splitting train & test
 			splitted_data = data_preprocessing.split_data(speed)

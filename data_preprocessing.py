@@ -40,14 +40,14 @@ def load_data():
     dataset_detection_video = [video for video in dataset_detection_video if video['frames'] > 0 or video['fps'] > 0]
     dataset_detection_video = [video for video in dataset_detection_video if int(video['frames']/video['fps']) >= 5] #at least 5 sec
 
-    # for video in dataset_detection_video:
-    #     if video['fps'] >= 29:
-    #         new_frames = []
-    #         for i in range(0,len(video['frames_info']),2):
-    #             new_frames.append(video['frames_info'][i])
+    for video in dataset_detection_video:
+        if video['fps'] >= 29:
+            new_frames = []
+            for i in range(0,len(video['frames_info']),2):
+                new_frames.append(video['frames_info'][i])
 
-    #         video['frames_info'] = new_frames
-    #         video['frames'] = len(new_frames)
+            video['frames_info'] = new_frames
+            video['frames'] = len(new_frames)
 
 
     classlbl_to_classid = {}
@@ -185,12 +185,13 @@ def cooccurrence(dataset_detection_video, batch_len):
         video_batchedboo_matrix = np.zeros((int(n_frame/n_batch),n_feature))
 
         iteration = int(n_frame/n_batch)
-        cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2), dtype=np.uint8)
+        cooc_flat_seq_matrix = np.zeros((iteration, (n_feature)*(n_feature+1)//2))
 
         for i in range(iteration):
             frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
             frame_batch = np.where(frame_batch>0,1,0)
             cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 0)
+            cooc_tri_upper = cooc_tri_upper/batch_len
 
             cooc_flat_index = 0
             for j in range(n_feature):
@@ -342,8 +343,8 @@ def kine(dataset_detection_video, batch_len):
                     binary_sequence[index,i-1] = 1
 
 
-        #img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
-        #img.show()
+        img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
+        img.show()
 
 
         # costruzione di objid_to_contiguous_intervals
