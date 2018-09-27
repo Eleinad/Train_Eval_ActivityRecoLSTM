@@ -21,9 +21,9 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 frame_len = [i['frames'] for i in dataset_detection_video]
 frame_len.sort()
 
-
-
 '''
+dataset_preprocessed, feat_type = data_preprocessing.boo(dataset_detection_video)
+
 sequences = dataset_preprocessed[0]['sequence']
 for i in range(1,len(dataset_preprocessed)):
     sequences = np.vstack((sequences,dataset_preprocessed[i]['sequence']))
@@ -39,11 +39,12 @@ voc_dict = {tuple(simbol):index for index,simbol in enumerate(voc)}
 from PIL import Image
 img = []
 color = {}
+a = np.array(range(5,255,9))
 for i in range(voc.shape[0]):
-    c = list(np.random.random(size=3) * 256)
+    c = [np.random.choice(len(a),1)[0], np.random.choice(len(a),1)[0],np.random.choice(len(a),1)[0]]
     if tuple(c) in color:
         while tuple(c) in color:
-            c = list(np.random.random(size=3) * 256)
+            c = [np.random.choice(len(a),1)[0], np.random.choice(len(a),1)[0],np.random.choice(len(a),1)[0]]
         color[tuple(c)] = 0
     else:
         color[tuple(c)] = 0
@@ -66,9 +67,9 @@ image_pil.show()
 '''
 
 
-frame_batch = [15]
-lstm = [128]
-relu = [4,8,16,32]
+frame_batch = [15,30]
+lstm = [8,16,32]
+relu = [8,16,32]
 
 for i in lstm:
 	for j in relu:
@@ -76,10 +77,10 @@ for i in lstm:
 
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
-			dataset_preprocessed, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
+			speed, feat_type = data_preprocessing.boo(dataset_detection_video)
 
 			#splitting train & test
-			splitted_data = data_preprocessing.split_data(dataset_preprocessed)
+			splitted_data = data_preprocessing.split_data(speed)
 
 			# create the graph
 			model.graph(splitted_data,i,j)
