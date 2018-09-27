@@ -76,7 +76,7 @@ for i in lstm:
 
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
-			speed, velocity, feat_type = data_preprocessing.kine([dataset_detection_video[1]], k)
+			speed, velocity, feat_type = data_preprocessing.kine(dataset_detection_video, k)
 
 			#splitting train & test
 			splitted_data = data_preprocessing.split_data(speed)
