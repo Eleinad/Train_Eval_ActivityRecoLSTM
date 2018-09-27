@@ -67,8 +67,8 @@ image_pil.show()
 
 
 frame_batch = [15]
-lstm = [16]
-relu = [0]
+lstm = [128]
+relu = [4,8,16,32]
 
 for i in lstm:
 	for j in relu:

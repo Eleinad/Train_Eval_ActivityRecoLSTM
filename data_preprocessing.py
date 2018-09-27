@@ -191,7 +191,6 @@ def cooccurrence(dataset_detection_video, batch_len):
             frame_batch = video['sequence'][(n_batch*i):((n_batch*i)+n_batch),:]
             frame_batch = np.where(frame_batch>0,1,0)
             cooc_tri_upper = np.triu(frame_batch.T @ frame_batch, 0)
-            cooc_tri_upper = cooc_tri_upper/batch_len
 
             cooc_flat_index = 0
             for j in range(n_feature):
