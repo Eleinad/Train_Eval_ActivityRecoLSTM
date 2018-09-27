@@ -67,7 +67,7 @@ image_pil.show()
 '''
 
 
-frame_batch = [30]
+frame_batch = [15,30]
 lstm = [8,16,32]
 relu = [8,16,32]
 
@@ -77,10 +77,10 @@ for i in lstm:
 
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			#features
-			speed, feat_type = data_preprocessing.boo(dataset_detection_video)
+			speed, velocity, feat_type = data_preprocessing.kine(dataset_detection_video, k)
 
 			#splitting train & test
-			splitted_data = data_preprocessing.split_data(speed)
+			splitted_data = data_preprocessing.split_data(velocity)
 
 			# create the graph
 			model.graph(splitted_data,i,j)
