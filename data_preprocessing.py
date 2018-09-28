@@ -451,17 +451,23 @@ def kine(dataset_detection_video, batch_len):
     return dataset_batchedspeed_video, dataset_batchedvelocity_video, 'kine'
 
 
-def split_data(dataset):
+def network_input(dataset):
     
     X,y,seq_len=[],[],[]
 
     for index,i in enumerate(dataset):
         X.append([frame_detection.tolist() for frame_detection in i['sequence']])
         one_hot = [0]*max_class_id
-        one_hot[i['class_id']-1] = 1
+        one_hot[i['class_id']] = 1
         y.append(one_hot)
         seq_len.append(i['sequence'].shape[0])
 
+    return X,y,seq_len
+
+
+def split_data(dataset):
+    
+    X,y,seq_len = network_input(dataset)
 
     X_train, X_test, y_train, y_test, seq_len_train, seq_len_test = \
          train_test_split(X,y,seq_len,test_size=0.2, random_state=0)#, stratify=y)
@@ -471,3 +477,5 @@ def split_data(dataset):
     print('Test len: %d' % len(X_test))
 
     return X_train, X_test, y_train, y_test, seq_len_train, seq_len_test
+
+
