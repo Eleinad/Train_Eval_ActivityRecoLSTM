@@ -28,7 +28,7 @@ for i in lstm:
 			coint, feat_type = data_preprocessing.cointersection(dataset_detection_video, k)
 
 			for index, video in enumerate(coint):
-				video['sequence'] = np.concatenate((video['sequence'], cooc[i]['sequence']),axis=1)
+				video['sequence'] = np.concatenate((video['sequence'], coo[i]['sequence']),axis=1)
 
 			#splitting train & test
 			splitted_data = data_preprocessing.split_data(coint)
