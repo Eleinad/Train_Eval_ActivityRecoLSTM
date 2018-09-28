@@ -336,7 +336,7 @@ def predict(X, y, seq, classlbl_to_classid):
 	current_seq_len_batch = tf.reshape(next_batch[2], (1,-1))[0]
 
 	# lstm
-	lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(20, state_is_tuple=True)
+	lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(16, state_is_tuple=True)
 	initial_state = lstm_cell.zero_state(fakeinference_batch_size, tf.float32)
 	_, states = tf.nn.dynamic_rnn(lstm_cell, current_X_batch, initial_state=initial_state, sequence_length=current_seq_len_batch, dtype=tf.float32)
 
@@ -355,11 +355,49 @@ def predict(X, y, seq, classlbl_to_classid):
 
 
 	with tf.Session() as sess:
-		saver.restore(sess, tf.train.latest_checkpoint('./weights'))
+		saver.restore(sess, tf.train.latest_checkpoint('./cooc_final_weights'))
 
 		test_y_true, test_y_pred, accuracy = sess.run((y_true, y_pred, accuracy))
 
 
 	classid_to_classlbl = {value:key for key,value in classlbl_to_classid.items()}
 
-	print(test_y_true, test_y_pred, accuracy) 
+	#print(test_y_true, test_y_pred, accuracy) 
+
+	test_y_true_lbl = classid_to_classlbl[test_y_true]
+	test_y_pred_lbl = classid_to_classlbl[test_y_pred]
+
+	video_pred(X,classid_to_classlbl,test_y_true_lbl,test_y_pred_lbl)
+
+
+
+	def video_pred(video, id_to_lbl y_t, y_p):
+
+		video_class_lbl = id_to_lbl[video['class_id']]
+		curr_folder = 0
+		for folder in os.listdir('./PersonalCare'):
+			if folder.lower().replace(' ','').replace('_','') == video_class_lbl:
+				curr_folder=folder
+
+		video_path = './PersonalCare/'+curr_folder+'/'+video['name']
+
+		vcapture = cv2.VideoCapture(video_path)
+		font = cv2.FONT_HERSHEY_SIMPLEX
+
+		for i in range(10):
+			success, image = vcapture.read()
+			
+			image = cv2.putText(image,test_y_true_lbl,(5,20), font, 1,(255,255,255),2,cv2.LINE_AA)
+
+			if i == 9:
+				image = cv2.putText(image,test_y_pred_lbl,(10,20), font, 1,(255,255,255),2,cv2.LINE_AA)
+				for id,coord in zip(curr_frame_objs,concat):
+					image = cv2.putText(image,objid_to_objclass[id],coord, font, 1,(255,255,255),2,cv2.LINE_AA)
+
+			cv2.imshow('frame',image)
+
+			if cv2.waitKey(600) & 0xFF == ord('q'):
+				break
+
+		vcapture.release()
+		cv2.destroyAllWindows()

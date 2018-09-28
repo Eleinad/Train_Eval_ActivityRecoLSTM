@@ -342,8 +342,8 @@ def kine(dataset_detection_video, batch_len):
                     binary_sequence[index,i-1] = 1
 
 
-        img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
-        img.show()
+        # img = Image.fromarray(binary_sequence.astype(np.uint8)*255)
+        # img.show()
 
 
         # costruzione di objid_to_contiguous_intervals
