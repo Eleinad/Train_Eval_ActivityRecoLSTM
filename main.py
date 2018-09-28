@@ -23,7 +23,7 @@ for i in lstm:
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			
 			#features
-			pre, feat_type = data_preprocessing.cooc(dataset_detection_video, k)
+			pre, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
 
 			#splitting train & test
 			splitted_data = data_preprocessing.split_data(pre)
