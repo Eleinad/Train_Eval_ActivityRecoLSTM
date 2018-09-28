@@ -13,8 +13,8 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 # ====== GRID SEARCH TRAINING=========
 
 frame_batch = [15]
-lstm = [16]
-relu = [0]
+lstm = [32,128]
+relu = [16,32]
 
 for i in lstm:
 	for j in relu:
@@ -23,16 +23,21 @@ for i in lstm:
 			print(str(i)+'-'+str(j)+'-'+str(k))
 			
 			#features
-			pre, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
+			coo, feat_type = data_preprocessing.cooccurrence(dataset_detection_video, k)
+
+			coint, feat_type = data_preprocessing.cointersection(dataset_detection_video, k)
+
+			for index, video in enumerate(coint):
+				video['sequence'] = np.concatenate((video['sequence'], cooc[i]['sequence']),axis=1)
 
 			#splitting train & test
-			splitted_data = data_preprocessing.split_data(pre)
+			splitted_data = data_preprocessing.split_data(coint)
 
 			# create the graph
 			model.graph(splitted_data,i,j)
 
 			# train & save 
-			model.train(splitted_data, classlbl_to_classid, 80, 32, feat_type, k)
+			model.train(splitted_data, classlbl_to_classid, 60, 32, feat_type, k)
 	
 
 
