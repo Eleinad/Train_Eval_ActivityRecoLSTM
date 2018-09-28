@@ -32,7 +32,7 @@ for i in lstm:
 			model.graph(splitted_data,i,j)
 
 			# train & save 
-			model.train(splitted_data, classlbl_to_classid, 38, 32, feat_type, k)
+			model.train(splitted_data, classlbl_to_classid, 80, 32, feat_type, k)
 	
 
 
