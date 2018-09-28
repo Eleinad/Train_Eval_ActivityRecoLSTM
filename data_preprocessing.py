@@ -53,6 +53,8 @@ def load_data():
     classlbl_to_classid = {}
     classid = 0
 
+    dataset_detection_video.sort(key=lambda x: x['class_id'])
+
     for i in dataset_detection_video:
         classlbl = i['class_id'].lower().replace(' ','')
         if classlbl not in classlbl_to_classid:
@@ -89,8 +91,7 @@ def load_data():
     pprint(class_statistics)
     print()
 
-    dataset_detection_video.sort(key=lambda x: x['class_id'])
-
+    
     return dataset_detection_video, classlbl_to_classid
 
 

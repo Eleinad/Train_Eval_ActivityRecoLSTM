@@ -13,8 +13,8 @@ dataset_detection_video, classlbl_to_classid = data_preprocessing.load_data()
 # ====== GRID SEARCH TRAINING=========
 
 frame_batch = [15]
-lstm = [32,128]
-relu = [16,32]
+lstm = [32]
+relu = [16]
 
 for i in lstm:
 	for j in relu:
@@ -55,8 +55,10 @@ print(dataset_detection_video[rnd_video_index]['video_name'], dataset_detection_
 #features
 preprocessed_dataset, feat_type = data_preprocessing.cooccurrence([dataset_detection_video[rnd_video_index]], 15)
 
-#splitting train & test
+#network input formatting
 X,y,seq_len = data_preprocessing.network_input(preprocessed_dataset)
+
+print(y)
 
 # restore & inference
 test_y_true_lbl, test_y_pred_lbl = model.predict(X,y,seq_len, classlbl_to_classid)
