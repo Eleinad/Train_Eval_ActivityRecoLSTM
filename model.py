@@ -371,7 +371,7 @@ def predict(X, y, seq, classlbl_to_classid):
 
 
 
-	def video_pred(video, id_to_lbl y_t, y_p):
+	def video_pred(video, id_to_lbl, y_t, y_p):
 
 		video_class_lbl = id_to_lbl[video['class_id']]
 		curr_folder = 0
